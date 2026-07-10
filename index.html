@@ -250,7 +250,7 @@
   </div>
 
   <div class="fine-riga">
-    <button class="secondario" id="btn-annulla">Annulla</button>
+    <button class="secondario" id="btn-pausa">Pausa</button>
     <button class="secondario" id="btn-respiro">Respiro</button>
     <button class="secondario" id="btn-fine">Termina</button>
   </div>
@@ -272,6 +272,14 @@
   <p class="fase" id="fase-respiro">Inspira</p>
   <p class="conta" id="conta-respiro">4</p>
   <button class="link-btn" id="btn-salta" style="margin-top:22px">Salta la pausa</button>
+</div>
+
+<!-- ============ VELO PAUSA ============ -->
+<div class="velo" id="velo-pausa" role="dialog" aria-label="Pasto in pausa">
+  <h2>In pausa</h2>
+  <p style="opacity:.75;font-size:.95rem;margin-top:6px">Il tempo è fermo. Riprendi quando vuoi.</p>
+  <button class="cta" id="btn-riprendi" style="width:min(80vw,280px);margin-top:30px">Riprendi il pasto</button>
+  <button class="link-btn" id="btn-annulla" style="margin-top:18px">Annulla il pasto</button>
 </div>
 
 <!-- ============ VELO RIEPILOGO ============ -->
@@ -386,6 +394,7 @@
 
   let inizio=0, bocconi=0, ultimoBoccone=0, intervalli=[];
   let respiroInCoda=false, codaDa=0, avvisoRespiroDato=false;
+  let inPausa=false, pausatoDa=0, obiettivoRaggiunto=false;
   let timerId=null, wakeLock=null;
   let pausaFatta = {1:false, 2:false};
   const PAUSA_SUGGERITA = 25;   // secondi consigliati tra bocconi
@@ -400,6 +409,7 @@
     inizio = Date.now(); bocconi=0; ultimoBoccone=0; intervalli=[];
     pausaFatta={1:false,2:false};
     respiroInCoda=false; avvisoRespiroDato=false;
+    inPausa=false; obiettivoRaggiunto=false;
     $('n-bocconi').textContent='0';
     $('attesa').textContent='';
     $('messaggio').textContent='Buon appetito. Primo boccone quando vuoi.';
@@ -420,8 +430,16 @@
   }
 
   function tic(){
+    if(inPausa) return;
     const sec = Math.floor((Date.now()-inizio)/1000);
     $('orologio').textContent = fmt(sec);
+
+    if(!obiettivoRaggiunto && sec>=durataMin*60){
+      obiettivoRaggiunto=true;
+      suonoPronto();
+      $('messaggio').textContent='Obiettivo raggiunto. Continua pure, senza fretta.';
+      voce('Obiettivo raggiunto. Continua pure, senza fretta.');
+    }
 
     // anello del tempo verso l'obiettivo
     const frac = Math.min(sec/(durataMin*60),1);
@@ -456,7 +474,8 @@
       const daUlt = bocconi>0 ? (Date.now()-ultimoBoccone)/1000 : 999;
       const attesa = (Date.now()-codaDa)/1000;
       if(daUlt>=PAUSA_SUGGERITA || attesa>75){
-        respiroInCoda=false; avvisoRespiroDato=false; avviaRespiro();
+        respiroInCoda=false; avvisoRespiroDato=false;
+    inPausa=false; obiettivoRaggiunto=false; avviaRespiro();
       }else if(!avvisoRespiroDato){
         avvisoRespiroDato=true;
         $('messaggio').textContent='Finisci con calma il boccone: tra poco, pausa respiro.';
@@ -540,8 +559,26 @@
   });
 
   /* ---------- fine pasto ---------- */
+  $('btn-pausa').addEventListener('click',()=>{
+    if(inPausa) return;
+    inPausa=true; pausatoDa=Date.now();
+    try{speechSynthesis.cancel();}catch(e){}
+    $('velo-pausa').classList.add('attiva');
+  });
+  $('btn-riprendi').addEventListener('click',()=>{
+    const fermo=Date.now()-pausatoDa;
+    inizio+=fermo;
+    if(ultimoBoccone) ultimoBoccone+=fermo;
+    if(codaDa) codaDa+=fermo;
+    inPausa=false;
+    $('velo-pausa').classList.remove('attiva');
+    $('messaggio').textContent='Si riprende. Con calma.';
+  });
   $('btn-annulla').addEventListener('click',()=>{
-    clearInterval(timerId); rilasciaSchermo(); mostra('home');
+    clearInterval(timerId); rilasciaSchermo();
+    inPausa=false;
+    $('velo-pausa').classList.remove('attiva');
+    mostra('home');
   });
 
   $('btn-fine').addEventListener('click',async ()=>{
