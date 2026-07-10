@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Piano Piano — mangia con calma</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Piano Piano">
+<meta name="theme-color" content="#171c14">
+<style>
+  :root{
+    --notte:#171c14;      /* sfondo, sera d'ulivo */
+    --ceramica:#f1ebdd;   /* piatto e testo */
+    --salvia:#8fae7e;     /* ritmo buono */
+    --ambra:#d9a441;      /* attenzione */
+    --coccio:#c4553b;     /* troppo veloce */
+    --traccia:#2a311f;    /* anello spento */
+    --velo:rgba(23,28,20,.92);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%}
+  body{
+    background:var(--notte);
+    color:var(--ceramica);
+    font-family:system-ui,-apple-system,sans-serif;
+    display:flex;flex-direction:column;
+    min-height:100dvh;
+    user-select:none;-webkit-user-select:none;
+    overflow-x:hidden;
+  }
+  h1,h2,.serif{font-family:Georgia,'Times New Roman',serif;font-weight:600}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;align-items:baseline;justify-content:space-between;
+    padding:20px 22px 6px;
+  }
+  header h1{font-size:1.35rem;letter-spacing:.01em}
+  header h1 em{font-style:italic;font-weight:400;opacity:.75}
+  .link-btn{
+    background:none;border:none;color:var(--ceramica);
+    font:500 .85rem system-ui,sans-serif;opacity:.65;text-decoration:underline;
+    text-underline-offset:3px;cursor:pointer;padding:6px;
+  }
+  .link-btn:focus-visible{outline:2px solid var(--ambra);border-radius:4px;opacity:1}
+
+  /* ---------- schermate ---------- */
+  .screen{flex:1;display:none;flex-direction:column;padding:0 22px 28px}
+  .screen.attiva{display:flex}
+
+  /* ---------- home ---------- */
+  #home .intro{margin:10px 0 26px;font-size:.95rem;line-height:1.55;opacity:.8;max-width:34ch}
+  .campo{margin-bottom:22px}
+  .campo label{display:block;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin-bottom:10px}
+  .scelte{display:flex;gap:10px}
+  .scelta{
+    flex:1;padding:14px 0;border-radius:14px;border:1.5px solid var(--traccia);
+    background:none;color:var(--ceramica);font:500 1rem system-ui,sans-serif;cursor:pointer;
+  }
+  .scelta[aria-pressed="true"]{border-color:var(--salvia);background:rgba(143,174,126,.12)}
+  .scelta:focus-visible{outline:2px solid var(--ambra)}
+  .interruttore{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 16px;border:1.5px solid var(--traccia);border-radius:14px;margin-bottom:14px;
+  }
+  .interruttore span{font-size:.95rem}
+  .interruttore small{display:block;opacity:.55;font-size:.78rem;margin-top:2px}
+  .toggle{
+    width:48px;height:28px;border-radius:14px;border:none;cursor:pointer;
+    background:var(--traccia);position:relative;flex-shrink:0;margin-left:14px;
+  }
+  .toggle::after{
+    content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
+    background:var(--ceramica);transition:transform .18s;
+  }
+  .toggle[aria-checked="true"]{background:var(--salvia)}
+  .toggle[aria-checked="true"]::after{transform:translateX(20px)}
+  .toggle:focus-visible{outline:2px solid var(--ambra)}
+
+  .cta{
+    margin-top:auto;padding:18px;border:none;border-radius:16px;cursor:pointer;
+    background:var(--ceramica);color:var(--notte);
+    font:600 1.05rem system-ui,sans-serif;
+  }
+  .cta:focus-visible{outline:3px solid var(--ambra);outline-offset:2px}
+
+  /* ---------- pasto: il piatto ---------- */
+  #pasto{align-items:center;text-align:center}
+  .stato-riga{
+    display:flex;justify-content:space-between;width:100%;
+    font-size:.85rem;opacity:.7;margin:8px 0 4px;font-variant-numeric:tabular-nums;
+  }
+  .messaggio{
+    min-height:2.6em;display:flex;align-items:center;justify-content:center;
+    font-family:Georgia,serif;font-size:1.25rem;line-height:1.3;margin:6px 0 10px;
+    transition:color .3s;
+  }
+  .piatto-area{position:relative;width:min(78vw,320px);aspect-ratio:1;margin:4px 0 14px}
+  svg.anello{position:absolute;inset:0;transform:rotate(-90deg)}
+  .anello circle{fill:none;stroke-width:7;stroke-linecap:round}
+  .anello .fondo{stroke:var(--traccia)}
+  .anello .tempo{stroke:var(--salvia);transition:stroke .4s, stroke-dashoffset 1s linear}
+  #piatto{
+    position:absolute;inset:8%;border-radius:50%;border:none;cursor:pointer;
+    background:radial-gradient(circle at 38% 32%, #f7f2e6 0%, var(--ceramica) 55%, #ded5c0 100%);
+    box-shadow:inset 0 0 0 10px rgba(23,28,20,.06), 0 10px 30px rgba(0,0,0,.35);
+    color:var(--notte);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  }
+  #piatto:active{transform:scale(.985)}
+  #piatto:focus-visible{outline:4px solid var(--ambra);outline-offset:4px}
+  #piatto .num{font-family:Georgia,serif;font-size:3.2rem;line-height:1;font-weight:600}
+  #piatto .eti{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
+  #piatto .attesa{font-size:.95rem;font-variant-numeric:tabular-nums;opacity:.75;min-height:1.3em}
+  .onda{
+    position:absolute;border-radius:50%;border:2px solid var(--notte);
+    inset:8%;opacity:0;pointer-events:none;
+  }
+  .onda.vai{animation:onda .7s ease-out}
+  @keyframes onda{from{opacity:.35;transform:scale(.9)}to{opacity:0;transform:scale(1.12)}}
+
+  .fine-riga{display:flex;gap:12px;width:100%;margin-top:auto}
+  .secondario{
+    flex:1;padding:15px;border-radius:14px;cursor:pointer;
+    border:1.5px solid var(--traccia);background:none;color:var(--ceramica);
+    font:500 .95rem system-ui,sans-serif;
+  }
+  .secondario:focus-visible{outline:2px solid var(--ambra)}
+  #btn-fine{flex:1.4;background:var(--ceramica);color:var(--notte);border:none;font-weight:600}
+
+  /* colori ritmo */
+  body[data-ritmo="buono"] .anello .tempo{stroke:var(--salvia)}
+  body[data-ritmo="medio"] .anello .tempo{stroke:var(--ambra)}
+  body[data-ritmo="veloce"] .anello .tempo{stroke:var(--coccio)}
+  body[data-ritmo="medio"] .messaggio{color:var(--ambra)}
+  body[data-ritmo="veloce"] .messaggio{color:var(--coccio)}
+
+  /* ---------- velo respiro / riepilogo ---------- */
+  .velo{
+    position:fixed;inset:0;background:var(--velo);backdrop-filter:blur(6px);
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    padding:28px;text-align:center;z-index:20;
+  }
+  .velo.attiva{display:flex}
+  .cerchio-respiro{
+    width:150px;height:150px;border-radius:50%;
+    border:2px solid var(--salvia);margin:26px 0;
+    transition:transform 1s linear, background-color 1s;
+    background:rgba(143,174,126,.08);
+  }
+  .velo h2{font-size:1.5rem;margin-bottom:6px}
+  .velo .fase{font-size:1.1rem;opacity:.85;min-height:1.4em}
+  .velo .conta{font-family:Georgia,serif;font-size:2.2rem;margin-top:4px;font-variant-numeric:tabular-nums}
+
+  /* ---------- riepilogo ---------- */
+  #riepilogo .velo-int{max-width:340px;width:100%}
+  .stat-griglia{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
+  .stat{border:1.5px solid var(--traccia);border-radius:14px;padding:14px 10px}
+  .stat .v{font-family:Georgia,serif;font-size:1.7rem}
+  .stat .k{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;opacity:.55;margin-top:4px}
+  .verdetto{font-size:1rem;line-height:1.5;opacity:.85;margin-bottom:8px}
+
+  /* ---------- storico ---------- */
+  #storico ul{list-style:none;margin-top:14px}
+  #storico li{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:14px 4px;border-bottom:1px solid var(--traccia);font-size:.92rem;
+  }
+  #storico li .quando{opacity:.6;font-size:.8rem;display:block;margin-top:2px}
+  #storico li .dur{font-family:Georgia,serif;font-size:1.15rem;font-variant-numeric:tabular-nums}
+  .vuoto{opacity:.6;margin-top:26px;font-size:.95rem;line-height:1.5}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body data-ritmo="buono">
+
+<header>
+  <h1>Piano <em>piano</em></h1>
+  <button class="link-btn" id="btn-storico">Storico</button>
+</header>
+
+<!-- ============ HOME ============ -->
+<section class="screen attiva" id="home">
+  <p class="intro">Appoggia il telefono accanto al piatto. Tocca il piatto sullo schermo ogni volta che posi la forchetta: al resto pensa lui.</p>
+
+  <div class="campo">
+    <label>Durata minima del pasto</label>
+    <div class="scelte" id="scelte-durata">
+      <button class="scelta" data-min="15">15 min</button>
+      <button class="scelta" data-min="20" aria-pressed="true">20 min</button>
+      <button class="scelta" data-min="25">25 min</button>
+    </div>
+  </div>
+
+  <div class="interruttore">
+    <span>Semaforo automatico
+      <small>Ti suggerisce quando masticare e quando fermarti</small>
+    </span>
+    <button class="toggle" id="tog-semaforo" role="switch" aria-checked="true" aria-label="Semaforo automatico"></button>
+  </div>
+
+  <div class="interruttore">
+    <span>Pause respiro
+      <small>Un respiro 4-7-8 a un terzo e a due terzi del pasto</small>
+    </span>
+    <button class="toggle" id="tog-respiro" role="switch" aria-checked="true" aria-label="Pause respiro"></button>
+  </div>
+
+  <div class="interruttore">
+    <span>Suoni discreti
+      <small>Campanella leggera quando la pausa è finita</small>
+    </span>
+    <button class="toggle" id="tog-suoni" role="switch" aria-checked="true" aria-label="Suoni discreti"></button>
+  </div>
+
+  <div class="interruttore">
+    <span>Voce guida
+      <small>Ti accompagna a voce, senza esagerare</small>
+    </span>
+    <button class="toggle" id="tog-voce" role="switch" aria-checked="true" aria-label="Voce guida"></button>
+  </div>
+
+  <button class="cta" id="btn-inizia">Inizia il pasto</button>
+</section>
+
+<!-- ============ PASTO ============ -->
+<section class="screen" id="pasto">
+  <div class="stato-riga">
+    <span id="orologio">00:00</span>
+    <span id="obiettivo"></span>
+  </div>
+  <p class="messaggio" id="messaggio">Buon appetito. Primo boccone quando vuoi.</p>
+
+  <div class="piatto-area">
+    <svg class="anello" viewBox="0 0 100 100" aria-hidden="true">
+      <circle class="fondo" cx="50" cy="50" r="46"></circle>
+      <circle class="tempo" cx="50" cy="50" r="46" id="arco"></circle>
+    </svg>
+    <div class="onda" id="onda"></div>
+    <button id="piatto" aria-label="Segna un boccone">
+      <span class="num" id="n-bocconi">0</span>
+      <span class="eti">bocconi</span>
+      <span class="attesa" id="attesa"></span>
+    </button>
+  </div>
+
+  <div class="fine-riga">
+    <button class="secondario" id="btn-annulla">Annulla</button>
+    <button class="secondario" id="btn-fine">Termina pasto</button>
+  </div>
+</section>
+
+<!-- ============ STORICO ============ -->
+<section class="screen" id="storico">
+  <h2 class="serif" style="margin-top:8px">I tuoi pasti</h2>
+  <ul id="lista-storico"></ul>
+  <p class="vuoto" id="storico-vuoto" hidden>Ancora nessun pasto registrato. Il primo piatto è sempre quello che conta.</p>
+  <button class="cta" id="btn-indietro" style="margin-top:auto">Torna all'inizio</button>
+</section>
+
+<!-- ============ VELO RESPIRO ============ -->
+<div class="velo" id="velo-respiro" role="dialog" aria-label="Pausa respiro">
+  <h2>Pausa</h2>
+  <p style="opacity:.75;font-size:.95rem">Posa la forchetta. Un solo respiro, con calma.</p>
+  <div class="cerchio-respiro" id="cerchio"></div>
+  <p class="fase" id="fase-respiro">Inspira</p>
+  <p class="conta" id="conta-respiro">4</p>
+  <button class="link-btn" id="btn-salta" style="margin-top:22px">Salta la pausa</button>
+</div>
+
+<!-- ============ VELO RIEPILOGO ============ -->
+<div class="velo" id="riepilogo" role="dialog" aria-label="Riepilogo pasto">
+  <div class="velo-int">
+    <h2>Pasto concluso</h2>
+    <div class="stat-griglia">
+      <div class="stat"><div class="v" id="r-durata">–</div><div class="k">durata</div></div>
+      <div class="stat"><div class="v" id="r-bocconi">–</div><div class="k">bocconi</div></div>
+      <div class="stat"><div class="v" id="r-intervallo">–</div><div class="k">media tra bocconi</div></div>
+      <div class="stat"><div class="v" id="r-obiettivo">–</div><div class="k">obiettivo</div></div>
+    </div>
+    <p class="verdetto" id="r-verdetto"></p>
+    <button class="cta" id="btn-chiudi-riep" style="width:100%;margin-top:14px">Va bene così</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const $ = id => document.getElementById(id);
+
+  /* ---------- impostazioni ---------- */
+  let durataMin = 20;
+  let usaSemaforo = true;
+  let usaRespiro = true;
+
+  document.querySelectorAll('#scelte-durata .scelta').forEach(b=>{
+    b.addEventListener('click',()=>{
+      document.querySelectorAll('#scelte-durata .scelta').forEach(x=>x.setAttribute('aria-pressed','false'));
+      b.setAttribute('aria-pressed','true');
+      durataMin = parseInt(b.dataset.min,10);
+    });
+  });
+  function legaToggle(el, set){
+    el.addEventListener('click',()=>{
+      const on = el.getAttribute('aria-checked')!=='true';
+      el.setAttribute('aria-checked', on?'true':'false');
+      set(on);
+    });
+  }
+  let usaSuoni = true;
+  let usaVoce = true;
+  legaToggle($('tog-semaforo'), v=>usaSemaforo=v);
+  legaToggle($('tog-respiro'),  v=>usaRespiro=v);
+  legaToggle($('tog-suoni'),    v=>usaSuoni=v);
+  legaToggle($('tog-voce'),     v=>{usaVoce=v; if(!v) try{speechSynthesis.cancel();}catch(e){}});
+
+  /* ---------- audio: campanelle morbide + voce ---------- */
+  let ctxAudio=null;
+  function initAudio(){
+    if(!usaSuoni && !usaVoce) return;
+    try{
+      if(!ctxAudio) ctxAudio=new (window.AudioContext||window.webkitAudioContext)();
+      if(ctxAudio.state==='suspended') ctxAudio.resume();
+    }catch(e){}
+    // sblocca le voci su alcuni browser
+    try{ if('speechSynthesis' in window) speechSynthesis.getVoices(); }catch(e){}
+  }
+  function nota(freq,dur,vol,quando){
+    try{
+      const t=ctxAudio.currentTime+(quando||0);
+      const o=ctxAudio.createOscillator(), g=ctxAudio.createGain();
+      o.type='sine'; o.frequency.value=freq;
+      g.gain.setValueAtTime(0,t);
+      g.gain.linearRampToValueAtTime(vol,t+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+      o.connect(g); g.connect(ctxAudio.destination);
+      o.start(t); o.stop(t+dur+0.05);
+    }catch(e){}
+  }
+  function suonoTap(){       if(usaSuoni&&ctxAudio) nota(520,0.12,0.05,0); }
+  function suonoPronto(){    if(usaSuoni&&ctxAudio){ nota(660,0.5,0.09,0); nota(880,0.7,0.08,0.18); } }
+  function suonoVeloce(){    if(usaSuoni&&ctxAudio) nota(330,0.4,0.08,0); }
+  function suonoPausa(){     if(usaSuoni&&ctxAudio) nota(587,0.9,0.09,0); }
+
+  let vociPronte=[];
+  try{
+    if('speechSynthesis' in window){
+      vociPronte=speechSynthesis.getVoices();
+      speechSynthesis.onvoiceschanged=()=>{vociPronte=speechSynthesis.getVoices();};
+    }
+  }catch(e){}
+  function voce(testo){
+    if(!usaVoce || !('speechSynthesis' in window)) return;
+    try{
+      speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(testo);
+      u.lang='it-IT'; u.rate=0.95; u.volume=0.9;
+      const v=vociPronte.find(v=>v.lang && v.lang.toLowerCase().startsWith('it'));
+      if(v) u.voice=v;
+      speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  let ultimaVoceVeloce=0;
+  function voceVeloce(){
+    // non ripete il rimprovero più di una volta al minuto
+    const ora=Date.now();
+    if(ora-ultimaVoceVeloce>60000){ ultimaVoceVeloce=ora; voce('Piano. Posa la forchetta e mastica.'); }
+  }
+
+  /* ---------- navigazione ---------- */
+  function mostra(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('attiva'));
+    $(id).classList.add('attiva');
+  }
+
+  /* ---------- stato pasto ---------- */
+  const CIRC = 2*Math.PI*46;
+  $('arco').style.strokeDasharray = CIRC;
+  $('arco').style.strokeDashoffset = CIRC;
+
+  let inizio=0, bocconi=0, ultimoBoccone=0, intervalli=[];
+  let timerId=null, wakeLock=null;
+  let pausaFatta = {1:false, 2:false};
+  const PAUSA_SUGGERITA = 25;   // secondi consigliati tra bocconi
+  const SOGLIA_VELOCE  = 15;
+
+  async function tieniSchermoAcceso(){
+    try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
+  }
+  function rilasciaSchermo(){ try{ if(wakeLock){wakeLock.release(); wakeLock=null;} }catch(e){} }
+
+  $('btn-inizia').addEventListener('click',()=>{
+    inizio = Date.now(); bocconi=0; ultimoBoccone=0; intervalli=[];
+    pausaFatta={1:false,2:false};
+    $('n-bocconi').textContent='0';
+    $('attesa').textContent='';
+    $('messaggio').textContent='Buon appetito. Primo boccone quando vuoi.';
+    document.body.dataset.ritmo='buono';
+    $('obiettivo').textContent='obiettivo '+durataMin+' min';
+    $('arco').style.strokeDashoffset=CIRC;
+    ultimaVoceVeloce=0;
+    mostra('pasto');
+    tieniSchermoAcceso();
+    initAudio();
+    voce('Buon appetito. Mangia con calma, ci penso io al ritmo.');
+    timerId=setInterval(tic,1000);
+  });
+
+  function fmt(s){
+    const m=Math.floor(s/60), r=s%60;
+    return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0');
+  }
+
+  function tic(){
+    const sec = Math.floor((Date.now()-inizio)/1000);
+    $('orologio').textContent = fmt(sec);
+
+    // anello del tempo verso l'obiettivo
+    const frac = Math.min(sec/(durataMin*60),1);
+    $('arco').style.strokeDashoffset = CIRC*(1-frac);
+
+    // conto alla rovescia sotto i bocconi + semaforo
+    if(bocconi>0){
+      const daUltimo = Math.floor((Date.now()-ultimoBoccone)/1000);
+      const resta = PAUSA_SUGGERITA - daUltimo;
+      if(usaSemaforo){
+        if(resta>0){
+          $('attesa').textContent = 'ancora '+resta+'s di pausa';
+        }else{
+          if(resta===0) suonoPronto();   // campanella: pausa completata
+          $('attesa').textContent = 'quando vuoi, con calma';
+          if(document.body.dataset.ritmo!=='veloce') document.body.dataset.ritmo='buono';
+        }
+      }else{
+        $('attesa').textContent = daUltimo+'s dall\u2019ultimo';
+      }
+    }
+
+    // pause respiro a 1/3 e 2/3
+    if(usaRespiro){
+      const t1 = durataMin*60/3, t2 = durataMin*60*2/3;
+      if(!pausaFatta[1] && sec>=t1){ pausaFatta[1]=true; avviaRespiro(); }
+      else if(!pausaFatta[2] && sec>=t2){ pausaFatta[2]=true; avviaRespiro(); }
+    }
+  }
+
+  /* ---------- tap boccone ---------- */
+  $('piatto').addEventListener('click',()=>{
+    const ora = Date.now();
+    if(bocconi>0){
+      const gap = (ora-ultimoBoccone)/1000;
+      intervalli.push(gap);
+      if(usaSemaforo){
+        if(gap < SOGLIA_VELOCE){
+          document.body.dataset.ritmo='veloce';
+          $('messaggio').textContent='Troppo veloce: posa la forchetta.';
+          suonoVeloce(); voceVeloce();
+        }else if(gap < PAUSA_SUGGERITA){
+          document.body.dataset.ritmo='medio';
+          $('messaggio').textContent='Quasi: allunga un po\u2019 la pausa.';
+        }else{
+          document.body.dataset.ritmo='buono';
+          $('messaggio').textContent='Ritmo perfetto. Gusta.';
+        }
+      }
+    }else{
+      $('messaggio').textContent='Mastica bene, poi posa la forchetta.';
+    }
+    bocconi++; ultimoBoccone=ora;
+    $('n-bocconi').textContent=bocconi;
+    suonoTap();
+    if(navigator.vibrate) try{navigator.vibrate(15);}catch(e){}
+    const o=$('onda'); o.classList.remove('vai'); void o.offsetWidth; o.classList.add('vai');
+  });
+
+  /* ---------- respiro 4-7-8 ---------- */
+  let respiroTimer=null;
+  function avviaRespiro(){
+    $('velo-respiro').classList.add('attiva');
+    suonoPausa();
+    voce('Pausa. Posa la forchetta. Inspira dal naso.');
+    const fasi=[['Inspira dal naso',4,1.35,null],
+                ['Trattieni',7,1.35,'Trattieni.'],
+                ['Espira dalla bocca',8,1,'Espira lentamente dalla bocca.']];
+    let i=0, resta=fasi[0][1];
+    aggiorna();
+    function aggiorna(){
+      $('fase-respiro').textContent=fasi[i][0];
+      $('conta-respiro').textContent=resta;
+      $('cerchio').style.transform='scale('+fasi[i][2]+')';
+    }
+    respiroTimer=setInterval(()=>{
+      resta--;
+      if(resta<=0){
+        i++;
+        if(i>=fasi.length){ chiudiRespiro(); voce('Bene. Si riprende, con calma.'); return; }
+        resta=fasi[i][1];
+        if(fasi[i][3]) voce(fasi[i][3]);
+      }
+      aggiorna();
+    },1000);
+  }
+  function chiudiRespiro(){
+    clearInterval(respiroTimer); respiroTimer=null;
+    try{speechSynthesis.cancel();}catch(e){}
+    $('velo-respiro').classList.remove('attiva');
+    $('cerchio').style.transform='scale(1)';
+    $('messaggio').textContent='Bene. Si riprende, con calma.';
+  }
+  $('btn-salta').addEventListener('click',chiudiRespiro);
+
+  /* ---------- fine pasto ---------- */
+  $('btn-annulla').addEventListener('click',()=>{
+    clearInterval(timerId); rilasciaSchermo(); mostra('home');
+  });
+
+  $('btn-fine').addEventListener('click',async ()=>{
+    clearInterval(timerId); rilasciaSchermo();
+    if(respiroTimer) chiudiRespiro();
+    const durataSec = Math.floor((Date.now()-inizio)/1000);
+    const media = intervalli.length ? Math.round(intervalli.reduce((a,b)=>a+b,0)/intervalli.length) : 0;
+
+    $('r-durata').textContent = fmt(durataSec);
+    $('r-bocconi').textContent = bocconi;
+    $('r-intervallo').textContent = media? media+'s' : '–';
+    $('r-obiettivo').textContent = durataMin+' min';
+
+    let verdetto;
+    if(durataSec >= durataMin*60 && media >= PAUSA_SUGGERITA){
+      verdetto='Pasto da manuale: durata giusta e pause vere. Così si digerisce.';
+    }else if(durataSec >= durataMin*60){
+      verdetto='Durata raggiunta, ma i bocconi erano ravvicinati. Prossimo obiettivo: pause più lunghe.';
+    }else if(media >= PAUSA_SUGGERITA){
+      verdetto='Buone pause tra i bocconi, ma pasto un po\u2019 corto. Aggiungi qualche minuto a tavola.';
+    }else{
+      verdetto='Pasto veloce. Nessun dramma: domani si riparte, un boccone alla volta.';
+    }
+    $('r-verdetto').textContent=verdetto;
+    $('riepilogo').classList.add('attiva');
+    voce(verdetto);
+
+    // salvataggio
+    try{
+      const pasto={quando:Date.now(),durataSec,bocconi,mediaSec:media,obiettivoMin:durataMin};
+      let lista=[];
+      try{ lista=JSON.parse(localStorage.getItem('pasti')||'[]'); }catch(e){}
+      lista.unshift(pasto);
+      if(lista.length>60) lista=lista.slice(0,60);
+      localStorage.setItem('pasti',JSON.stringify(lista));
+    }catch(e){ console.error('salvataggio non riuscito',e); }
+  });
+
+  $('btn-chiudi-riep').addEventListener('click',()=>{
+    $('riepilogo').classList.remove('attiva');
+    mostra('home');
+  });
+
+  /* ---------- storico ---------- */
+  $('btn-storico').addEventListener('click',async ()=>{
+    mostra('storico');
+    const ul=$('lista-storico'); ul.innerHTML='';
+    let lista=[];
+    try{ lista=JSON.parse(localStorage.getItem('pasti')||'[]'); }catch(e){}
+    $('storico-vuoto').hidden = lista.length>0;
+    lista.forEach(p=>{
+      const li=document.createElement('li');
+      const d=new Date(p.quando);
+      const quando=d.toLocaleDateString('it-IT',{day:'numeric',month:'short'})+' · '+
+                   d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+      const ok = p.durataSec>=p.obiettivoMin*60;
+      li.innerHTML='<span>'+p.bocconi+' bocconi, media '+(p.mediaSec||'–')+'s'+
+        '<span class="quando">'+quando+(ok?' · obiettivo raggiunto':'')+'</span></span>'+
+        '<span class="dur">'+fmt(p.durataSec)+'</span>';
+      ul.appendChild(li);
+    });
+  });
+  $('btn-indietro').addEventListener('click',()=>mostra('home'));
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>

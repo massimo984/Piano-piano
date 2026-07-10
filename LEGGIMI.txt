@@ -1,0 +1,16 @@
+PIANO PIANO — installazione su iPhone (una volta sola, ~5 minuti)
+
+1. Vai su github.com da Safari e crea un account gratuito (se non lo hai).
+2. Tocca "+" > New repository. Nome: piano-piano. Public. Create repository.
+3. Nella pagina del repository: "Add file" > "Upload files".
+   (Se non vedi il menu, in Safari tocca "aA" nella barra e scegli "Richiedi sito desktop".)
+4. Carica questi 6 file: index.html, manifest.json, sw.js,
+   icon-192.png, icon-512.png, apple-touch-icon.png. Poi "Commit changes".
+5. Settings > Pages > sotto "Branch" scegli "main" > Save.
+6. Dopo 1-2 minuti l'app e' online su:
+   https://TUONOME.github.io/piano-piano/
+7. Apri quell'indirizzo in Safari > tocca Condividi > "Aggiungi a schermata Home".
+8. Apri l'app dall'icona UNA volta con internet attivo: da quel momento
+   funziona anche offline, per sempre.
+
+Lo storico dei pasti resta salvato sul telefono, dentro l'app.
