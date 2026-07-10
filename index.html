@@ -251,7 +251,8 @@
 
   <div class="fine-riga">
     <button class="secondario" id="btn-annulla">Annulla</button>
-    <button class="secondario" id="btn-fine">Termina pasto</button>
+    <button class="secondario" id="btn-respiro">Respiro</button>
+    <button class="secondario" id="btn-fine">Termina</button>
   </div>
 </section>
 
@@ -384,6 +385,7 @@
   $('arco').style.strokeDashoffset = CIRC;
 
   let inizio=0, bocconi=0, ultimoBoccone=0, intervalli=[];
+  let respiroInCoda=false, codaDa=0, avvisoRespiroDato=false;
   let timerId=null, wakeLock=null;
   let pausaFatta = {1:false, 2:false};
   const PAUSA_SUGGERITA = 25;   // secondi consigliati tra bocconi
@@ -397,6 +399,7 @@
   $('btn-inizia').addEventListener('click',()=>{
     inizio = Date.now(); bocconi=0; ultimoBoccone=0; intervalli=[];
     pausaFatta={1:false,2:false};
+    respiroInCoda=false; avvisoRespiroDato=false;
     $('n-bocconi').textContent='0';
     $('attesa').textContent='';
     $('messaggio').textContent='Buon appetito. Primo boccone quando vuoi.';
@@ -444,8 +447,21 @@
     // pause respiro a 1/3 e 2/3
     if(usaRespiro){
       const t1 = durataMin*60/3, t2 = durataMin*60*2/3;
-      if(!pausaFatta[1] && sec>=t1){ pausaFatta[1]=true; avviaRespiro(); }
-      else if(!pausaFatta[2] && sec>=t2){ pausaFatta[2]=true; avviaRespiro(); }
+      if(!pausaFatta[1] && sec>=t1){ pausaFatta[1]=true; richiediRespiro(); }
+      else if(!pausaFatta[2] && sec>=t2){ pausaFatta[2]=true; richiediRespiro(); }
+    }
+
+    // parte solo quando hai finito di masticare (o dopo 75s di attesa)
+    if(respiroInCoda && !$('velo-respiro').classList.contains('attiva')){
+      const daUlt = bocconi>0 ? (Date.now()-ultimoBoccone)/1000 : 999;
+      const attesa = (Date.now()-codaDa)/1000;
+      if(daUlt>=PAUSA_SUGGERITA || attesa>75){
+        respiroInCoda=false; avvisoRespiroDato=false; avviaRespiro();
+      }else if(!avvisoRespiroDato){
+        avvisoRespiroDato=true;
+        $('messaggio').textContent='Finisci con calma il boccone: tra poco, pausa respiro.';
+        voce('Finisci il boccone con calma. Tra poco facciamo una pausa respiro.');
+      }
     }
   }
 
@@ -480,14 +496,19 @@
 
   /* ---------- respiro 4-7-8 ---------- */
   let respiroTimer=null;
+  function richiediRespiro(){
+    if($('velo-respiro').classList.contains('attiva') || respiroInCoda) return;
+    respiroInCoda=true; codaDa=Date.now(); avvisoRespiroDato=false;
+  }
   function avviaRespiro(){
     $('velo-respiro').classList.add('attiva');
     suonoPausa();
-    voce('Pausa. Posa la forchetta. Inspira dal naso.');
-    const fasi=[['Inspira dal naso',4,1.35,null],
+    const fasi=[['Preparati…',6,1,'Pausa respiro. Posa la forchetta e mettiti comodo. Iniziamo tra qualche secondo.'],
+                ['Inspira dal naso',4,1.35,'Inspira dal naso.'],
                 ['Trattieni',7,1.35,'Trattieni.'],
-                ['Espira dalla bocca',8,1,'Espira lentamente dalla bocca.']];
+                ['Espira dalla bocca',8,1,'Espira, lentamente, dalla bocca.']];
     let i=0, resta=fasi[0][1];
+    voce(fasi[0][3]);
     aggiorna();
     function aggiorna(){
       $('fase-respiro').textContent=fasi[i][0];
@@ -500,6 +521,7 @@
         i++;
         if(i>=fasi.length){ chiudiRespiro(); voce('Bene. Si riprende, con calma.'); return; }
         resta=fasi[i][1];
+        if(usaSuoni&&ctxAudio) nota(700+i*80,0.35,0.07,0);  // rintocco a ogni cambio fase
         if(fasi[i][3]) voce(fasi[i][3]);
       }
       aggiorna();
@@ -513,6 +535,9 @@
     $('messaggio').textContent='Bene. Si riprende, con calma.';
   }
   $('btn-salta').addEventListener('click',chiudiRespiro);
+  $('btn-respiro').addEventListener('click',()=>{
+    if(!$('velo-respiro').classList.contains('attiva')){ respiroInCoda=false; avviaRespiro(); }
+  });
 
   /* ---------- fine pasto ---------- */
   $('btn-annulla').addEventListener('click',()=>{
