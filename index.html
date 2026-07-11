@@ -171,6 +171,22 @@
   #storico li .quando{opacity:.6;font-size:.8rem;display:block;margin-top:2px}
   #storico li .dur{font-family:Georgia,serif;font-size:1.15rem;font-variant-numeric:tabular-nums}
   .vuoto{opacity:.6;margin-top:26px;font-size:.95rem;line-height:1.5}
+  #storico li{padding:0;position:relative;overflow:hidden}
+  .riga-int{
+    display:flex;justify-content:space-between;align-items:center;width:100%;
+    padding:14px 6px;background:var(--notte);transition:transform .2s;position:relative;z-index:1;
+  }
+  .dietro{
+    position:absolute;right:0;top:0;bottom:0;width:88px;border:none;cursor:pointer;
+    background:var(--coccio);color:#fff;font:600 .85rem system-ui,sans-serif;z-index:0;
+  }
+  #dettaglio textarea{
+    width:100%;min-height:110px;resize:vertical;border-radius:14px;
+    border:1.5px solid var(--traccia);background:none;color:var(--ceramica);
+    font:400 .95rem system-ui,sans-serif;padding:12px;line-height:1.5;
+  }
+  #dettaglio textarea:focus-visible{outline:2px solid var(--ambra)}
+  #dettaglio .campo label{margin-top:6px}
   .btn-del{
     border:1.5px solid var(--traccia);background:none;color:var(--ceramica);
     border-radius:10px;padding:8px 12px;font:500 .8rem system-ui,sans-serif;
@@ -270,6 +286,24 @@
   <p class="vuoto" id="storico-vuoto" hidden>Ancora nessun pasto registrato. Il primo piatto è sempre quello che conta.</p>
   <button class="link-btn" id="btn-svuota" hidden style="align-self:center;margin-top:14px">Svuota tutto lo storico</button>
   <button class="cta" id="btn-indietro" style="margin-top:auto">Torna all'inizio</button>
+</section>
+
+<!-- ============ DETTAGLIO SESSIONE ============ -->
+<section class="screen" id="dettaglio">
+  <h2 class="serif" style="margin-top:8px;font-size:1.2rem" id="det-titolo"></h2>
+  <div class="stat-griglia">
+    <div class="stat"><div class="v" id="det-durata">–</div><div class="k">durata</div></div>
+    <div class="stat"><div class="v" id="det-bocconi">–</div><div class="k">bocconi</div></div>
+    <div class="stat"><div class="v" id="det-intervallo">–</div><div class="k">media tra bocconi</div></div>
+    <div class="stat"><div class="v" id="det-obiettivo">–</div><div class="k">obiettivo</div></div>
+  </div>
+  <p class="verdetto" id="det-verdetto"></p>
+  <div class="campo" style="margin-top:14px">
+    <label>La tua nota</label>
+    <textarea id="det-nota" placeholder="Com’è andata? Fame, contesto, sensazioni…"></textarea>
+  </div>
+  <button class="cta" id="btn-salva-nota" style="margin-top:4px">Salva nota</button>
+  <button class="link-btn" id="btn-torna-storico" style="margin-top:14px">Torna allo storico</button>
 </section>
 
 <!-- ============ VELO RESPIRO ============ -->
@@ -600,16 +634,7 @@
     $('r-intervallo').textContent = media? media+'s' : '–';
     $('r-obiettivo').textContent = durataMin+' min';
 
-    let verdetto;
-    if(durataSec >= durataMin*60 && media >= PAUSA_SUGGERITA){
-      verdetto='Pasto da manuale: durata giusta e pause vere. Così si digerisce.';
-    }else if(durataSec >= durataMin*60){
-      verdetto='Durata raggiunta, ma i bocconi erano ravvicinati. Prossimo obiettivo: pause più lunghe.';
-    }else if(media >= PAUSA_SUGGERITA){
-      verdetto='Buone pause tra i bocconi, ma pasto un po\u2019 corto. Aggiungi qualche minuto a tavola.';
-    }else{
-      verdetto='Pasto veloce. Nessun dramma: domani si riparte, un boccone alla volta.';
-    }
+    const verdetto=verdettoDi({durataSec,mediaSec:media,obiettivoMin:durataMin});
     $('r-verdetto').textContent=verdetto;
     $('riepilogo').classList.add('attiva');
     voce(verdetto);
@@ -637,35 +662,64 @@
   function salvaPasti(lista){
     try{ localStorage.setItem('pasti',JSON.stringify(lista)); }catch(e){}
   }
+  function verdettoDi(p){
+    const okDurata = p.durataSec >= p.obiettivoMin*60;
+    const okPause  = (p.mediaSec||0) >= PAUSA_SUGGERITA;
+    if(okDurata && okPause) return 'Pasto da manuale: durata giusta e pause vere. Cos\u00ec si digerisce.';
+    if(okDurata) return 'Durata raggiunta, ma i bocconi erano ravvicinati. Prossimo obiettivo: pause pi\u00f9 lunghe.';
+    if(okPause) return 'Buone pause tra i bocconi, ma pasto un po\u2019 corto. Aggiungi qualche minuto a tavola.';
+    return 'Pasto veloce. Nessun dramma: domani si riparte, un boccone alla volta.';
+  }
   function renderStorico(){
     const ul=$('lista-storico'); ul.innerHTML='';
     const lista=leggiPasti();
     $('storico-vuoto').hidden = lista.length>0;
     $('btn-svuota').hidden = lista.length===0;
-    lista.forEach((p,idx)=>{
+    lista.forEach(p=>{
       const li=document.createElement('li');
+      const dietro=document.createElement('button');
+      dietro.className='dietro'; dietro.textContent='Elimina';
+      dietro.setAttribute('aria-label','Elimina questo pasto');
+      const riga=document.createElement('div'); riga.className='riga-int';
       const d=new Date(p.quando);
-      const quando=d.toLocaleDateString('it-IT',{day:'numeric',month:'short'})+' · '+
+      const quando=d.toLocaleDateString('it-IT',{day:'numeric',month:'short'})+' \u00b7 '+
                    d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
       const ok = p.durataSec>=p.obiettivoMin*60;
-      li.innerHTML='<span>'+p.bocconi+' bocconi, media '+(p.mediaSec||'–')+'s'+
-        '<span class="quando">'+quando+(ok?' · obiettivo raggiunto':'')+'</span></span>'+
+      riga.innerHTML='<span>'+p.bocconi+' bocconi, media '+(p.mediaSec||'\u2013')+'s'+
+        '<span class="quando">'+quando+(ok?' \u00b7 obiettivo raggiunto':'')+(p.nota?' \u00b7 con nota':'')+'</span></span>'+
         '<span class="dur">'+fmt(p.durataSec)+'</span>';
-      const del=document.createElement('button');
-      del.className='btn-del'; del.textContent='✕';
-      del.setAttribute('aria-label','Elimina questo pasto');
-      let armato=false, tId=null;
-      del.addEventListener('click',()=>{
-        if(!armato){
-          armato=true; del.textContent='Elimina?'; del.classList.add('conferma');
-          tId=setTimeout(()=>{armato=false; del.textContent='✕'; del.classList.remove('conferma');},3000);
-        }else{
-          clearTimeout(tId);
-          const l=leggiPasti(); l.splice(idx,1); salvaPasti(l);
-          renderStorico();
-        }
+      li.appendChild(dietro); li.appendChild(riga);
+
+      // scorrimento laterale per eliminare
+      let x0=0,dx=0,aperto=false,mosso=false;
+      riga.addEventListener('touchstart',e=>{
+        x0=e.touches[0].clientX; dx=0; mosso=false; riga.style.transition='none';
+      },{passive:true});
+      riga.addEventListener('touchmove',e=>{
+        dx=e.touches[0].clientX-x0;
+        if(Math.abs(dx)>8) mosso=true;
+        let t=(aperto?-88:0)+dx;
+        if(t>0)t=0; if(t<-110)t=-110;
+        riga.style.transform='translateX('+t+'px)';
+      },{passive:true});
+      riga.addEventListener('touchend',()=>{
+        riga.style.transition='transform .2s';
+        const t=(aperto?-88:0)+dx;
+        aperto = t<-44;
+        riga.style.transform='translateX('+(aperto?-88:0)+'px)';
       });
-      li.appendChild(del);
+      // tocco semplice = apri il dettaglio (se non stavi scorrendo)
+      riga.addEventListener('click',()=>{
+        if(mosso) return;
+        if(aperto){ aperto=false; riga.style.transform='translateX(0)'; return; }
+        apriDettaglio(p.quando);
+      });
+      dietro.addEventListener('click',()=>{
+        const l=leggiPasti();
+        const i=l.findIndex(x=>x.quando===p.quando);
+        if(i>=0){ l.splice(i,1); salvaPasti(l); }
+        renderStorico();
+      });
       ul.appendChild(li);
     });
   }
@@ -682,6 +736,34 @@
       renderStorico();
     }
   });
+
+  /* ---------- dettaglio sessione + nota ---------- */
+  let dettaglioId=null;
+  function apriDettaglio(id){
+    const p=leggiPasti().find(x=>x.quando===id);
+    if(!p) return;
+    dettaglioId=id;
+    const d=new Date(p.quando);
+    $('det-titolo').textContent=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'})+', '+
+      d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    $('det-durata').textContent=fmt(p.durataSec);
+    $('det-bocconi').textContent=p.bocconi;
+    $('det-intervallo').textContent=p.mediaSec? p.mediaSec+'s':'\u2013';
+    $('det-obiettivo').textContent=p.obiettivoMin+' min';
+    $('det-verdetto').textContent=verdettoDi(p);
+    $('det-nota').value=p.nota||'';
+    mostra('dettaglio');
+  }
+  $('btn-salva-nota').addEventListener('click',()=>{
+    const l=leggiPasti();
+    const p=l.find(x=>x.quando===dettaglioId);
+    if(p){ p.nota=$('det-nota').value.trim(); salvaPasti(l); }
+    const b=$('btn-salva-nota');
+    b.textContent='Salvata \u2713';
+    setTimeout(()=>{b.textContent='Salva nota';},1500);
+  });
+  $('btn-torna-storico').addEventListener('click',()=>{ mostra('storico'); renderStorico(); });
+
   $('btn-indietro').addEventListener('click',()=>mostra('home'));
 })();
 </script>
