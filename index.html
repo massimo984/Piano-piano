@@ -171,6 +171,15 @@
   #storico li .quando{opacity:.6;font-size:.8rem;display:block;margin-top:2px}
   #storico li .dur{font-family:Georgia,serif;font-size:1.15rem;font-variant-numeric:tabular-nums}
   .vuoto{opacity:.6;margin-top:26px;font-size:.95rem;line-height:1.5}
+  .riga-voce{display:flex;gap:10px;margin:-4px 0 14px}
+  .riga-voce select{
+    flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--traccia);
+    background:var(--notte);color:var(--ceramica);font:400 .9rem system-ui,sans-serif;
+  }
+  .riga-voce button{
+    padding:12px 16px;border-radius:12px;border:1.5px solid var(--traccia);
+    background:none;color:var(--ceramica);font:500 .9rem system-ui,sans-serif;cursor:pointer;
+  }
   #storico li{padding:0;position:relative;overflow:hidden}
   .riga-int{
     display:flex;justify-content:space-between;align-items:center;width:100%;
@@ -246,6 +255,10 @@
       <small>Ti accompagna a voce, senza esagerare</small>
     </span>
     <button class="toggle" id="tog-voce" role="switch" aria-checked="true" aria-label="Voce guida"></button>
+  </div>
+  <div class="riga-voce" id="riga-voce" hidden>
+    <select id="sel-voce" aria-label="Scegli la voce"></select>
+    <button id="btn-prova-voce">Prova</button>
   </div>
 
   <button class="cta" id="btn-inizia">Inizia il pasto</button>
@@ -398,24 +411,65 @@
   function suonoVeloce(){    if(usaSuoni&&ctxAudio) nota(330,0.4,0.08,0); }
   function suonoPausa(){     if(usaSuoni&&ctxAudio) nota(587,0.9,0.09,0); }
 
-  let vociPronte=[];
+  let vociIt=[];
+  function punteggioVoce(v){
+    const n=(v.name||'').toLowerCase();
+    let p=0;
+    if(n.includes('premium')) p+=40;
+    if(n.includes('enhanced')||n.includes('migliorat')) p+=30;
+    if(n.includes('alice')||n.includes('federica')||n.includes('emma')||n.includes('luca')) p+=10;
+    if(n.includes('eloquence')||n.includes('compact')) p-=20;
+    if(v.localService) p+=5;
+    return p;
+  }
+  function aggiornaVoci(){
+    try{
+      const tutte=speechSynthesis.getVoices()||[];
+      vociIt=tutte.filter(v=>v.lang && v.lang.toLowerCase().startsWith('it'))
+                  .sort((a,b)=>punteggioVoce(b)-punteggioVoce(a));
+      const sel=$('sel-voce');
+      if(vociIt.length>1){
+        $('riga-voce').hidden=false;
+        const salvata=localStorage.getItem('vocePreferita')||'';
+        sel.innerHTML='';
+        vociIt.forEach(v=>{
+          const o=document.createElement('option');
+          o.value=v.name; o.textContent=v.name.replace(/\(.*?\)/,'').trim();
+          if(v.name===salvata) o.selected=true;
+          sel.appendChild(o);
+        });
+      }
+    }catch(e){}
+  }
   try{
     if('speechSynthesis' in window){
-      vociPronte=speechSynthesis.getVoices();
-      speechSynthesis.onvoiceschanged=()=>{vociPronte=speechSynthesis.getVoices();};
+      aggiornaVoci();
+      speechSynthesis.onvoiceschanged=aggiornaVoci;
     }
   }catch(e){}
+  function vocePreferita(){
+    const scelta=localStorage.getItem('vocePreferita');
+    if(scelta){ const v=vociIt.find(v=>v.name===scelta); if(v) return v; }
+    return vociIt[0]||null;
+  }
   function voce(testo){
     if(!usaVoce || !('speechSynthesis' in window)) return;
     try{
       speechSynthesis.cancel();
       const u=new SpeechSynthesisUtterance(testo);
-      u.lang='it-IT'; u.rate=0.95; u.volume=0.9;
-      const v=vociPronte.find(v=>v.lang && v.lang.toLowerCase().startsWith('it'));
+      u.lang='it-IT'; u.rate=0.92; u.pitch=1.05; u.volume=0.9;
+      const v=vocePreferita();
       if(v) u.voice=v;
       speechSynthesis.speak(u);
     }catch(e){}
   }
+  $('sel-voce').addEventListener('change',e=>{
+    try{ localStorage.setItem('vocePreferita',e.target.value); }catch(err){}
+  });
+  $('btn-prova-voce').addEventListener('click',()=>{
+    initAudio();
+    voce('Buon appetito. Mangia con calma, un boccone alla volta.');
+  });
   let ultimaVoceVeloce=0;
   function voceVeloce(){
     // non ripete il rimprovero più di una volta al minuto
@@ -437,6 +491,26 @@
   let inizio=0, bocconi=0, ultimoBoccone=0, intervalli=[];
   let respiroInCoda=false, codaDa=0, avvisoRespiroDato=false;
   let inPausa=false, pausatoDa=0, obiettivoRaggiunto=false;
+  let frasiUsate=[];
+  const FRASI=[
+    'Il cibo è nutrimento, non una gara.',
+    'Ogni boccone merita il suo tempo.',
+    'Sei a tavola, non in corsa.',
+    'La sazietà arriva dopo venti minuti: dalle tempo.',
+    'Chi va piano sente i sapori.',
+    'La digestione comincia in bocca: mastica.',
+    'Posa la forchetta: il gusto resta.',
+    'Questo pasto è un momento tuo.',
+    'Respira tra un boccone e l\u2019altro.',
+    'La tavola è una pausa, non un pit stop.'
+  ];
+  function fraseCalma(){
+    if(frasiUsate.length>=FRASI.length) frasiUsate=[];
+    let idx;
+    do{ idx=Math.floor(Math.random()*FRASI.length); }while(frasiUsate.includes(idx));
+    frasiUsate.push(idx);
+    return FRASI[idx];
+  }
   let timerId=null, wakeLock=null;
   let pausaFatta = {1:false, 2:false};
   const PAUSA_SUGGERITA = 25;   // secondi consigliati tra bocconi
@@ -459,11 +533,22 @@
     $('obiettivo').textContent='obiettivo '+durataMin+' min';
     $('arco').style.strokeDashoffset=CIRC;
     ultimaVoceVeloce=0;
+    frasiUsate=[];
     mostra('pasto');
     tieniSchermoAcceso();
     initAudio();
-    voce('Buon appetito. Mangia con calma, ci penso io al ritmo.');
-    timerId=setInterval(tic,1000);
+    const via=()=>{
+      inizio=Date.now();
+      $('messaggio').textContent='Buon appetito. Primo boccone quando vuoi.';
+      voce('Buon appetito. Mangia con calma, ci penso io al ritmo.');
+      timerId=setInterval(tic,1000);
+    };
+    if(usaRespiro){
+      $('messaggio').textContent='Prima di iniziare, un respiro insieme.';
+      avviaRespiro(via,'Benvenuto a tavola. Prima di iniziare, un respiro insieme. Mettiti comodo.');
+    }else{
+      via();
+    }
   });
 
   function fmt(s){
@@ -475,6 +560,13 @@
     if(inPausa) return;
     const sec = Math.floor((Date.now()-inizio)/1000);
     $('orologio').textContent = fmt(sec);
+
+    if(sec>0 && sec%90===0 && document.body.dataset.ritmo==='buono'
+       && !$('velo-respiro').classList.contains('attiva') && !respiroInCoda){
+      const f=fraseCalma();
+      $('messaggio').textContent=f;
+      if(sec%180===0) voce(f);
+    }
 
     if(!obiettivoRaggiunto && sec>=durataMin*60){
       obiettivoRaggiunto=true;
@@ -561,10 +653,12 @@
     if($('velo-respiro').classList.contains('attiva') || respiroInCoda) return;
     respiroInCoda=true; codaDa=Date.now(); avvisoRespiroDato=false;
   }
-  function avviaRespiro(){
+  let respiroCallback=null;
+  function avviaRespiro(cb,intro){
+    respiroCallback=cb||null;
     $('velo-respiro').classList.add('attiva');
     suonoPausa();
-    const fasi=[['Preparati…',6,1,'Pausa respiro. Posa la forchetta e mettiti comodo. Iniziamo tra qualche secondo.'],
+    const fasi=[['Preparati…',10,1,intro||'Pausa respiro. Posa la forchetta, appoggia la schiena e mettiti comodo. Iniziamo tra qualche secondo.'],
                 ['Inspira dal naso',4,1.35,'Inspira dal naso.'],
                 ['Trattieni',7,1.35,'Trattieni.'],
                 ['Espira dalla bocca',8,1,'Espira, lentamente, dalla bocca.']];
@@ -580,7 +674,12 @@
       resta--;
       if(resta<=0){
         i++;
-        if(i>=fasi.length){ chiudiRespiro(); voce('Bene. Si riprende, con calma.'); return; }
+        if(i>=fasi.length){
+          const avevaCb=!!respiroCallback;
+          chiudiRespiro();
+          if(!avevaCb) voce('Bene. Si riprende, con calma.');
+          return;
+        }
         resta=fasi[i][1];
         if(usaSuoni&&ctxAudio) nota(700+i*80,0.35,0.07,0);  // rintocco a ogni cambio fase
         if(fasi[i][3]) voce(fasi[i][3]);
@@ -594,6 +693,8 @@
     $('velo-respiro').classList.remove('attiva');
     $('cerchio').style.transform='scale(1)';
     $('messaggio').textContent='Bene. Si riprende, con calma.';
+    const cb=respiroCallback; respiroCallback=null;
+    if(cb) cb();
   }
   $('btn-salta').addEventListener('click',chiudiRespiro);
   $('btn-respiro').addEventListener('click',()=>{
@@ -623,12 +724,20 @@
     mostra('home');
   });
 
-  $('btn-fine').addEventListener('click',async ()=>{
+  $('btn-fine').addEventListener('click',()=>{
+    if($('velo-respiro').classList.contains('attiva')) return;
     clearInterval(timerId); rilasciaSchermo();
-    if(respiroTimer) chiudiRespiro();
     const durataSec = Math.floor((Date.now()-inizio)/1000);
     const media = intervalli.length ? Math.round(intervalli.reduce((a,b)=>a+b,0)/intervalli.length) : 0;
+    if(usaRespiro){
+      avviaRespiro(()=>mostraRiepilogo(durataSec,media),
+        'Il pasto è finito. Chiudiamo con un respiro, con calma.');
+    }else{
+      mostraRiepilogo(durataSec,media);
+    }
+  });
 
+  function mostraRiepilogo(durataSec,media){
     $('r-durata').textContent = fmt(durataSec);
     $('r-bocconi').textContent = bocconi;
     $('r-intervallo').textContent = media? media+'s' : '–';
@@ -648,7 +757,7 @@
       if(lista.length>60) lista=lista.slice(0,60);
       localStorage.setItem('pasti',JSON.stringify(lista));
     }catch(e){ console.error('salvataggio non riuscito',e); }
-  });
+  }
 
   $('btn-chiudi-riep').addEventListener('click',()=>{
     $('riepilogo').classList.remove('attiva');
