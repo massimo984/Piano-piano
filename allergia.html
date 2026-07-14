@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Game Over Allergia — Diario del Reset</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+  :root{--nero:#0b0b0b;--rosso:#e8342a;--magenta:#ff2fd6;--ciano:#29e0f2;--grigio:#8a8a8a;--riga:#e4e4e4}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  body{
+    background:#fff;color:var(--nero);
+    font-family:system-ui,-apple-system,sans-serif;
+    min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+  }
+  header{
+    width:min(92vw,520px);display:flex;align-items:center;justify-content:space-between;
+    padding:22px 0 14px;border-bottom:3px solid var(--nero);
+  }
+  header a{color:var(--nero);text-decoration:none;font-size:1.3rem;padding:4px 8px}
+  header a:focus-visible,button:focus-visible,.chip:focus-visible{outline:3px solid var(--ciano);outline-offset:2px}
+  header .logo{
+    font-family:'Press Start 2P',monospace;font-size:.68rem;color:var(--rosso);
+    text-shadow:-1.5px 0 var(--magenta),1.5px 0 var(--ciano);text-align:center;line-height:1.7;
+  }
+  main{width:min(92vw,520px);padding-bottom:48px}
+  h2{font-family:'Press Start 2P',monospace;font-size:.66rem;letter-spacing:.05em;margin:28px 0 13px}
+  h2 .emo{font-family:system-ui;font-size:1rem;margin-right:6px}
+
+  /* griglia dei 21 giorni */
+  .griglia{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin-top:4px}
+  .gg{
+    aspect-ratio:1;border:2.5px solid var(--nero);border-radius:9px;background:#fff;cursor:pointer;
+    font-family:'Press Start 2P',monospace;font-size:.6rem;color:var(--nero);
+  }
+  .gg.fatto{background:var(--nero);color:#fff}
+  .gg.oggi{border-color:var(--rosso);color:var(--rosso);border-width:3px}
+  .gg.fatto.oggi{background:var(--rosso);border-color:var(--rosso);color:#fff}
+  .gg.sel{box-shadow:0 0 0 3px var(--ciano)}
+
+  .motto{
+    border:3px solid var(--nero);border-radius:14px;padding:16px;margin-top:22px;
+    font-size:.95rem;line-height:1.5;font-style:italic;position:relative;
+  }
+  .motto .tag{
+    position:absolute;top:-12px;left:14px;background:var(--rosso);color:#fff;
+    font-family:'Press Start 2P',monospace;font-size:.55rem;padding:5px 9px;border-radius:6px;font-style:normal;
+  }
+  .motto .quando{display:block;margin-top:8px;font-size:.78rem;color:var(--grigio);font-style:normal}
+
+  .riga-campi{display:flex;gap:12px;flex-wrap:wrap}
+  .campo{flex:1;min-width:120px}
+  .campo label{display:block;font-size:.78rem;color:var(--grigio);margin-bottom:7px}
+  input[type=number],input[type=time],input[type=text],textarea{
+    width:100%;border:2.5px solid var(--nero);border-radius:11px;background:#fff;color:var(--nero);
+    font:400 .95rem system-ui,sans-serif;padding:11px;
+  }
+  textarea{min-height:90px;resize:vertical;line-height:1.5}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px}
+  .chip{
+    border:2.5px solid var(--nero);border-radius:999px;background:#fff;color:var(--nero);
+    padding:9px 14px;font-size:.85rem;cursor:pointer;
+  }
+  .chip[aria-pressed="true"]{background:var(--nero);color:#fff}
+  .chip.rossa[aria-pressed="true"]{background:var(--rosso);border-color:var(--rosso)}
+
+  /* slider 0-10 */
+  .slider-riga{display:flex;align-items:center;gap:14px;margin-top:2px}
+  input[type=range]{flex:1;accent-color:var(--rosso);height:34px}
+  .slider-val{
+    font-family:'Press Start 2P',monospace;font-size:1rem;min-width:2ch;text-align:center;
+  }
+
+  .salva{
+    width:100%;margin-top:30px;padding:17px;border:none;border-radius:12px;cursor:pointer;
+    background:var(--rosso);color:#fff;
+    font-family:'Press Start 2P',monospace;font-size:.7rem;letter-spacing:.04em;
+    box-shadow:4px 4px 0 var(--nero);
+  }
+  .salva:active{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--nero)}
+
+  .grafico{display:flex;align-items:flex-end;gap:4px;height:86px;border-bottom:3px solid var(--nero)}
+  .barra{flex:1;background:var(--nero);border-radius:3px 3px 0 0;min-height:4px}
+  .barra.alta{background:var(--rosso)}
+  .barra.vuota{background:var(--riga)}
+  .grafico-eti{display:flex;justify-content:space-between;font-size:.7rem;color:var(--grigio);margin-top:7px}
+
+  /* intro / avvio reset */
+  .intro{border:3px solid var(--nero);border-radius:16px;padding:22px;margin-top:26px;line-height:1.6;font-size:.95rem}
+  .link-btn{background:none;border:none;color:var(--grigio);font:500 .82rem system-ui;text-decoration:underline;text-underline-offset:3px;cursor:pointer;display:block;margin:34px auto 0}
+  .toast{
+    position:fixed;bottom:26px;left:50%;transform:translateX(-50%);
+    background:var(--nero);color:#fff;padding:12px 20px;border-radius:10px;
+    font-family:'Press Start 2P',monospace;font-size:.58rem;opacity:0;transition:opacity .25s;pointer-events:none;z-index:9;
+  }
+  .toast.su{opacity:1}
+  [hidden]{display:none!important}
+  @media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" aria-label="Torna alla collana">←</a>
+  <div class="logo">GAME OVER<br>ALLERGIA</div>
+  <span style="width:34px"></span>
+</header>
+
+<main>
+  <!-- avvio -->
+  <section id="avvio" hidden>
+    <div class="intro">
+      <strong>Diario del Reset — i tuoi 21 giorni.</strong><br><br>
+      Il rituale di scrivere ogni sera per cinque minuti è la chiave di volta dell'intero protocollo.
+      Non importa se la giornata è andata male: scrivi comunque, anzi scrivi soprattutto.
+      Ogni domenica rileggi la settimana e cerca i pattern.
+    </div>
+    <button class="salva" id="btn-avvia">INIZIA IL RESET — GIORNO 1 È OGGI</button>
+  </section>
+
+  <!-- diario -->
+  <section id="diario" hidden>
+    <h2>I 21 GIORNI</h2>
+    <div class="griglia" id="griglia"></div>
+
+    <div class="motto">
+      <span class="tag" id="motto-tag">GIORNO 1</span>
+      <span id="motto-testo"></span>
+      <span class="quando" id="motto-data"></span>
+    </div>
+
+    <h2><span class="emo">❄️</span>FREDDO</h2>
+    <div class="chips" style="margin-bottom:14px">
+      <button class="chip rossa" id="freddo-fatto" aria-pressed="false">Doccia fredda fatta</button>
+    </div>
+    <div class="riga-campi">
+      <div class="campo"><label>Durata (secondi)</label><input type="number" id="freddo-durata" min="0" inputmode="numeric" placeholder="es. 45"></div>
+      <div class="campo"><label>Euforia post-doccia</label>
+        <div class="slider-riga"><input type="range" id="freddo-euforia" min="0" max="10" value="0"><span class="slider-val" id="v-euforia">0</span></div>
+      </div>
+    </div>
+
+    <h2><span class="emo">🌬️</span>RESPIRO</h2>
+    <div class="riga-campi">
+      <div class="campo"><label>Minuti di pratica</label><input type="number" id="resp-minuti" min="0" inputmode="numeric" placeholder="es. 10"></div>
+      <div class="campo"><label>Control Pause (sec)</label><input type="number" id="resp-cp" min="0" inputmode="numeric" placeholder="es. 25"></div>
+    </div>
+    <div class="campo" style="margin-top:14px"><label>Respiro nasale durante il giorno</label>
+      <div class="chips" id="resp-nasale">
+        <button class="chip" data-v="sempre" aria-pressed="false">Sempre</button>
+        <button class="chip" data-v="tratti" aria-pressed="false">A tratti</button>
+        <button class="chip" data-v="bocca" aria-pressed="false">Bocca aperta</button>
+      </div>
+    </div>
+
+    <h2><span class="emo">⚡</span>CARBURANTE</h2>
+    <div class="riga-campi">
+      <div class="campo"><label>Ore di digiuno</label><input type="number" id="carb-ore" min="0" max="48" inputmode="numeric" placeholder="es. 14"></div>
+      <div class="campo"><label>Primo pasto alle</label><input type="time" id="carb-primo"></div>
+      <div class="campo"><label>Ultimo pasto alle</label><input type="time" id="carb-ultimo"></div>
+    </div>
+    <div class="campo" style="margin-top:14px"><label>Carboidrati</label>
+      <div class="chips" id="carb-livello">
+        <button class="chip" data-v="bassi" aria-pressed="false">Bassi (&lt;50g)</button>
+        <button class="chip" data-v="medi" aria-pressed="false">Medi</button>
+        <button class="chip" data-v="alti" aria-pressed="false">Alti</button>
+      </div>
+    </div>
+
+    <h2><span class="emo">🤧</span>SINTOMI ALLERGICI</h2>
+    <div class="campo"><label>Intensità</label>
+      <div class="slider-riga"><input type="range" id="sint-int" min="0" max="10" value="0"><span class="slider-val" id="v-int">0</span></div>
+    </div>
+    <div class="campo" style="margin-top:14px"><label>Tipo</label>
+      <div class="chips" id="sint-tipo">
+        <button class="chip" aria-pressed="false">Naso</button>
+        <button class="chip" aria-pressed="false">Occhi</button>
+        <button class="chip" aria-pressed="false">Pelle</button>
+        <button class="chip" aria-pressed="false">Bronchi</button>
+        <button class="chip" aria-pressed="false">Altro</button>
+      </div>
+    </div>
+    <div class="chips" style="margin-top:14px">
+      <button class="chip rossa" id="sint-anti" aria-pressed="false">Antistaminici presi</button>
+    </div>
+
+    <h2><span class="emo">📝</span>NOTE LIBERE</h2>
+    <textarea id="note" placeholder="L'umore, una vittoria, una crisi, un'osservazione, un dubbio…"></textarea>
+
+    <button class="salva" id="btn-salva">SALVA IL GIORNO</button>
+
+    <h2>INTENSITÀ SINTOMI — 21 GIORNI</h2>
+    <div class="grafico" id="grafico"></div>
+    <div class="grafico-eti"><span>giorno 1</span><span>giorno 21</span></div>
+
+    <button class="link-btn" id="btn-ricomincia">Ricomincia il Reset da capo</button>
+  </section>
+</main>
+
+<div class="toast" id="toast">GIORNO SALVATO ✓</div>
+
+<script>
+(function(){
+  "use strict";
+  const $=id=>document.getElementById(id);
+  const CHIAVE='go_reset';
+  const MOTTI=[
+    'Oggi inizio. Per il futuro me.',
+    'La fame del mattino \u00e8 quasi sempre psicologica.',
+    'Resisti. Il giorno 3 \u00e8 il pi\u00f9 duro degli zuccheri.',
+    'Il primo mal di testa \u00e8 il segnale che funziona.',
+    'Se inizia la stanchezza pomeridiana, \u00e8 la keto-flu. Passer\u00e0.',
+    'Sale, acqua, magnesio. Tre alleati per oggi.',
+    'Una settimana. Rileggi i sei giorni precedenti.',
+    'Comincia la trasformazione vera. Resta paziente.',
+    'Estendi il digiuno a 14 ore. Bevi di pi\u00f9.',
+    'Il giorno della soglia. Da qui in poi \u00e8 in discesa.',
+    'La lucidit\u00e0 mentale che senti oggi non \u00e8 caffeina. \u00c8 metabolismo.',
+    'Aggiungi la camminata con apnea. Dieci passi alla volta.',
+    'Doccia fredda di 60 secondi senza pi\u00f9 contare. Sei pronto.',
+    'Due settimane. Festeggia con verdure e olio.',
+    'L\u2019ultima settimana \u00e8 la pi\u00f9 importante. Non mollare.',
+    'Estendi a 16 ore. Mangia tardi e bene.',
+    'Test del respiro: confronta con il giorno 1.',
+    'Riduci o sospendi gradualmente gli antistaminici, parlando col medico.',
+    'Cerca i pattern nel diario. Cosa ti ha aiutato di pi\u00f9?',
+    'Penultimo giorno. Preparati al test finale di domani.',
+    'Hai fatto la cosa pi\u00f9 difficile: l\u2019inizio. Ora \u00e8 il momento di vivere.'
+  ];
+  let giornoSel=1;
+
+  function leggi(){ try{ return JSON.parse(localStorage.getItem(CHIAVE)||'null'); }catch(e){ return null; } }
+  function salvaDb(db){ try{ localStorage.setItem(CHIAVE,JSON.stringify(db)); }catch(e){} }
+  function oggiStr(){
+    const d=new Date();
+    return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  }
+  function giornoCorrente(db){
+    const [a,m,g]=db.inizio.split('-').map(Number);
+    const diff=Math.floor((new Date().setHours(0,0,0,0)-new Date(a,m-1,g).getTime())/86400000)+1;
+    return Math.min(Math.max(diff,1),21);
+  }
+  function dataDelGiorno(db,n){
+    const [a,m,g]=db.inizio.split('-').map(Number);
+    const d=new Date(a,m-1,g); d.setDate(d.getDate()+n-1);
+    return d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+  }
+
+  /* ----- slider ----- */
+  $('freddo-euforia').addEventListener('input',e=>$('v-euforia').textContent=e.target.value);
+  $('sint-int').addEventListener('input',e=>$('v-int').textContent=e.target.value);
+
+  /* ----- chips ----- */
+  function toggleSingolo(id){
+    const b=$(id);
+    b.addEventListener('click',()=>b.setAttribute('aria-pressed', b.getAttribute('aria-pressed')!=='true'));
+  }
+  toggleSingolo('freddo-fatto'); toggleSingolo('sint-anti');
+  function gruppoEsclusivo(idGruppo){
+    document.querySelectorAll('#'+idGruppo+' .chip').forEach(c=>{
+      c.addEventListener('click',()=>{
+        const era=c.getAttribute('aria-pressed')==='true';
+        document.querySelectorAll('#'+idGruppo+' .chip').forEach(x=>x.setAttribute('aria-pressed','false'));
+        if(!era) c.setAttribute('aria-pressed','true');
+      });
+    });
+  }
+  gruppoEsclusivo('resp-nasale'); gruppoEsclusivo('carb-livello');
+  document.querySelectorAll('#sint-tipo .chip').forEach(c=>{
+    c.addEventListener('click',()=>c.setAttribute('aria-pressed', c.getAttribute('aria-pressed')!=='true'));
+  });
+
+  function valGruppo(idGruppo){
+    const c=document.querySelector('#'+idGruppo+' .chip[aria-pressed="true"]');
+    return c? c.dataset.v : '';
+  }
+  function setGruppo(idGruppo,v){
+    document.querySelectorAll('#'+idGruppo+' .chip').forEach(c=>
+      c.setAttribute('aria-pressed', c.dataset.v===v?'true':'false'));
+  }
+
+  function raccogli(){
+    return {
+      freddo:{
+        fatto:$('freddo-fatto').getAttribute('aria-pressed')==='true',
+        durata:$('freddo-durata').value,
+        euforia:parseInt($('freddo-euforia').value,10)
+      },
+      respiro:{
+        minuti:$('resp-minuti').value,
+        cp:$('resp-cp').value,
+        nasale:valGruppo('resp-nasale')
+      },
+      carburante:{
+        ore:$('carb-ore').value,
+        primo:$('carb-primo').value,
+        ultimo:$('carb-ultimo').value,
+        carbo:valGruppo('carb-livello')
+      },
+      sintomi:{
+        intensita:parseInt($('sint-int').value,10),
+        tipo:[...document.querySelectorAll('#sint-tipo .chip[aria-pressed="true"]')].map(c=>c.textContent),
+        antistaminici:$('sint-anti').getAttribute('aria-pressed')==='true'
+      },
+      note:$('note').value.trim()
+    };
+  }
+  function riempi(v){
+    v=v||{};
+    const f=v.freddo||{}, r=v.respiro||{}, c=v.carburante||{}, si=v.sintomi||{};
+    $('freddo-fatto').setAttribute('aria-pressed', f.fatto?'true':'false');
+    $('freddo-durata').value=f.durata||'';
+    $('freddo-euforia').value=f.euforia||0; $('v-euforia').textContent=f.euforia||0;
+    $('resp-minuti').value=r.minuti||''; $('resp-cp').value=r.cp||'';
+    setGruppo('resp-nasale',r.nasale||'');
+    $('carb-ore').value=c.ore||''; $('carb-primo').value=c.primo||''; $('carb-ultimo').value=c.ultimo||'';
+    setGruppo('carb-livello',c.carbo||'');
+    $('sint-int').value=si.intensita||0; $('v-int').textContent=si.intensita||0;
+    document.querySelectorAll('#sint-tipo .chip').forEach(ch=>
+      ch.setAttribute('aria-pressed', si.tipo&&si.tipo.includes(ch.textContent)?'true':'false'));
+    $('sint-anti').setAttribute('aria-pressed', si.antistaminici?'true':'false');
+    $('note').value=v.note||'';
+  }
+
+  function mostraGiorno(n){
+    const db=leggi();
+    giornoSel=n;
+    $('motto-tag').textContent='GIORNO '+n;
+    $('motto-testo').textContent=MOTTI[n-1];
+    $('motto-data').textContent=dataDelGiorno(db,n);
+    riempi(db.giorni[n]||null);
+    render();
+  }
+
+  function render(){
+    const db=leggi();
+    const corrente=giornoCorrente(db);
+    // griglia
+    const gr=$('griglia'); gr.innerHTML='';
+    for(let n=1;n<=21;n++){
+      const b=document.createElement('button');
+      b.className='gg'+(db.giorni[n]?' fatto':'')+(n===corrente?' oggi':'')+(n===giornoSel?' sel':'');
+      b.textContent=n;
+      b.setAttribute('aria-label','Giorno '+n+(db.giorni[n]?', compilato':''));
+      b.addEventListener('click',()=>{mostraGiorno(n);window.scrollTo({top:0,behavior:'smooth'});});
+      gr.appendChild(b);
+    }
+    // grafico intensità
+    const g=$('grafico'); g.innerHTML='';
+    for(let n=1;n<=21;n++){
+      const v=db.giorni[n];
+      const barra=document.createElement('div');
+      if(v&&v.sintomi){
+        const i=v.sintomi.intensita||0;
+        barra.className='barra'+(i>=6?' alta':'');
+        barra.style.height=(i===0?5:i*10)+'%';
+        barra.title='Giorno '+n+': intensit\u00e0 '+i;
+      }else{
+        barra.className='barra vuota'; barra.style.height='4px';
+      }
+      g.appendChild(barra);
+    }
+  }
+
+  $('btn-salva').addEventListener('click',()=>{
+    const db=leggi();
+    db.giorni[giornoSel]=raccogli();
+    salvaDb(db);
+    render();
+    const t=$('toast'); t.classList.add('su');
+    setTimeout(()=>t.classList.remove('su'),1600);
+  });
+
+  $('btn-avvia').addEventListener('click',()=>{
+    salvaDb({inizio:oggiStr(),giorni:{}});
+    $('avvio').hidden=true; $('diario').hidden=false;
+    mostraGiorno(1);
+  });
+
+  let riArmato=false;
+  $('btn-ricomincia').addEventListener('click',()=>{
+    if(!riArmato){
+      riArmato=true;
+      $('btn-ricomincia').textContent='Sicuro? Cancella tutto e riparte: tocca di nuovo';
+      setTimeout(()=>{riArmato=false;$('btn-ricomincia').textContent='Ricomincia il Reset da capo';},3500);
+    }else{
+      localStorage.removeItem(CHIAVE);
+      riArmato=false;
+      $('btn-ricomincia').textContent='Ricomincia il Reset da capo';
+      $('diario').hidden=true; $('avvio').hidden=false;
+      window.scrollTo({top:0});
+    }
+  });
+
+  /* ----- avvio ----- */
+  const db=leggi();
+  if(db&&db.inizio){
+    $('diario').hidden=false;
+    mostraGiorno(giornoCorrente(db));
+  }else{
+    $('avvio').hidden=false;
+  }
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+  }
+})();
+</script>
+</body>
+</html>
