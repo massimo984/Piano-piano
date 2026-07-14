@@ -2,885 +2,135 @@
 <html lang="it">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Piano Piano — mangia con calma</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GAME OVER — la collana</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Piano Piano">
-<meta name="theme-color" content="#171c14">
+<meta name="apple-mobile-web-app-title" content="Game Over">
+<meta name="theme-color" content="#ffffff">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 <style>
   :root{
-    --notte:#171c14;      /* sfondo, sera d'ulivo */
-    --ceramica:#f1ebdd;   /* piatto e testo */
-    --salvia:#8fae7e;     /* ritmo buono */
-    --ambra:#d9a441;      /* attenzione */
-    --coccio:#c4553b;     /* troppo veloce */
-    --traccia:#2a311f;    /* anello spento */
-    --velo:rgba(23,28,20,.92);
+    --nero:#0b0b0b; --rosso:#e8342a; --magenta:#ff2fd6; --ciano:#29e0f2;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{height:100%}
   body{
-    background:var(--notte);
-    color:var(--ceramica);
+    background:#fff;color:var(--nero);
     font-family:system-ui,-apple-system,sans-serif;
-    display:flex;flex-direction:column;
-    min-height:100dvh;
-    user-select:none;-webkit-user-select:none;
-    overflow-x:hidden;
+    min-height:100dvh;display:flex;flex-direction:column;align-items:center;
+    overflow-x:hidden;position:relative;
   }
-  h1,h2,.serif{font-family:Georgia,'Times New Roman',serif;font-weight:600}
+  .px{font-family:'Press Start 2P',monospace}
 
-  /* ---------- header ---------- */
-  header{
-    display:flex;align-items:baseline;justify-content:space-between;
-    padding:20px 22px 6px;
-  }
-  header h1{font-size:1.35rem;letter-spacing:.01em}
-  header h1 em{font-style:italic;font-weight:400;opacity:.75}
-  .link-btn{
-    background:none;border:none;color:var(--ceramica);
-    font:500 .85rem system-ui,sans-serif;opacity:.65;text-decoration:underline;
-    text-underline-offset:3px;cursor:pointer;padding:6px;
-  }
-  .link-btn:focus-visible{outline:2px solid var(--ambra);border-radius:4px;opacity:1}
+  /* pallini fluttuanti come in copertina */
+  .dot{position:absolute;border-radius:50%;background:var(--nero);pointer-events:none;z-index:0}
+  .dot.anello{background:none;border:3px solid var(--nero)}
+  @keyframes va{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+  .dot{animation:va 6s ease-in-out infinite}
 
-  /* ---------- schermate ---------- */
-  .screen{flex:1;display:none;flex-direction:column;padding:0 22px 28px}
-  .screen.attiva{display:flex}
+  header{margin:52px 0 10px;text-align:center;z-index:1}
+  h1{
+    font-family:'Press Start 2P',monospace;
+    font-size:clamp(2rem,9vw,3.4rem);line-height:1.25;
+    color:var(--rosso);
+    text-shadow:-3px 0 var(--magenta), 3px 0 var(--ciano);
+    letter-spacing:.02em;
+  }
+  header p{margin-top:16px;font-size:.85rem;opacity:.6;letter-spacing:.14em;text-transform:uppercase}
 
-  /* ---------- home ---------- */
-  #home .intro{margin:10px 0 26px;font-size:.95rem;line-height:1.55;opacity:.8;max-width:34ch}
-  .campo{margin-bottom:22px}
-  .campo label{display:block;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;opacity:.6;margin-bottom:10px}
-  .scelte{display:flex;gap:10px}
-  .scelta{
-    flex:1;padding:14px 0;border-radius:14px;border:1.5px solid var(--traccia);
-    background:none;color:var(--ceramica);font:500 1rem system-ui,sans-serif;cursor:pointer;
+  main{width:min(92vw,460px);margin:34px 0 auto;display:flex;flex-direction:column;gap:16px;z-index:1}
+  .livello{
+    display:flex;align-items:center;gap:16px;text-decoration:none;color:var(--nero);
+    border:3px solid var(--nero);border-radius:18px;padding:18px;
+    background:#fff;position:relative;
   }
-  .scelta[aria-pressed="true"]{border-color:var(--salvia);background:rgba(143,174,126,.12)}
-  .scelta:focus-visible{outline:2px solid var(--ambra)}
-  .interruttore{
-    display:flex;align-items:center;justify-content:space-between;
-    padding:14px 16px;border:1.5px solid var(--traccia);border-radius:14px;margin-bottom:14px;
+  .livello:active{transform:translate(2px,2px)}
+  .livello:focus-visible{outline:3px solid var(--ciano);outline-offset:3px}
+  .livello svg{width:52px;height:52px;flex-shrink:0}
+  .livello .tit{font-family:'Press Start 2P',monospace;font-size:.8rem;letter-spacing:.04em}
+  .livello .sotto{font-size:.8rem;opacity:.6;margin-top:7px;line-height:1.4}
+  .livello.attivo .tit{color:var(--rosso);text-shadow:-1.5px 0 var(--magenta),1.5px 0 var(--ciano)}
+  .livello.bloccato{opacity:.38;pointer-events:none}
+  .tag{
+    position:absolute;top:-11px;right:14px;background:var(--nero);color:#fff;
+    font-family:'Press Start 2P',monospace;font-size:.5rem;padding:5px 8px;border-radius:6px;
   }
-  .interruttore span{font-size:.95rem}
-  .interruttore small{display:block;opacity:.55;font-size:.78rem;margin-top:2px}
-  .toggle{
-    width:48px;height:28px;border-radius:14px;border:none;cursor:pointer;
-    background:var(--traccia);position:relative;flex-shrink:0;margin-left:14px;
-  }
-  .toggle::after{
-    content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;
-    background:var(--ceramica);transition:transform .18s;
-  }
-  .toggle[aria-checked="true"]{background:var(--salvia)}
-  .toggle[aria-checked="true"]::after{transform:translateX(20px)}
-  .toggle:focus-visible{outline:2px solid var(--ambra)}
+  .livello.attivo .tag{background:var(--rosso)}
 
-  .cta{
-    margin-top:auto;padding:18px;border:none;border-radius:16px;cursor:pointer;
-    background:var(--ceramica);color:var(--notte);
-    font:600 1.05rem system-ui,sans-serif;
+  footer{margin:44px 0 26px;text-align:center;z-index:1}
+  footer .press{
+    font-family:'Press Start 2P',monospace;font-size:.62rem;letter-spacing:.1em;
+    animation:blink 1.6s steps(1) infinite;
   }
-  .cta:focus-visible{outline:3px solid var(--ambra);outline-offset:2px}
+  @keyframes blink{50%{opacity:0}}
+  footer .mafla{margin-top:16px;font-size:.72rem;letter-spacing:.5em;opacity:.55}
 
-  /* ---------- pasto: il piatto ---------- */
-  #pasto{align-items:center;text-align:center}
-  .stato-riga{
-    display:flex;justify-content:space-between;width:100%;
-    font-size:.85rem;opacity:.7;margin:8px 0 4px;font-variant-numeric:tabular-nums;
-  }
-  .messaggio{
-    min-height:2.6em;display:flex;align-items:center;justify-content:center;
-    font-family:Georgia,serif;font-size:1.25rem;line-height:1.3;margin:6px 0 10px;
-    transition:color .3s;
-  }
-  .piatto-area{position:relative;width:min(78vw,320px);aspect-ratio:1;margin:4px 0 14px}
-  svg.anello{position:absolute;inset:0;transform:rotate(-90deg)}
-  .anello circle{fill:none;stroke-width:7;stroke-linecap:round}
-  .anello .fondo{stroke:var(--traccia)}
-  .anello .tempo{stroke:var(--salvia);transition:stroke .4s, stroke-dashoffset 1s linear}
-  #piatto{
-    position:absolute;inset:8%;border-radius:50%;border:none;cursor:pointer;
-    background:radial-gradient(circle at 38% 32%, #f7f2e6 0%, var(--ceramica) 55%, #ded5c0 100%);
-    box-shadow:inset 0 0 0 10px rgba(23,28,20,.06), 0 10px 30px rgba(0,0,0,.35);
-    color:var(--notte);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
-  }
-  #piatto:active{transform:scale(.985)}
-  #piatto:focus-visible{outline:4px solid var(--ambra);outline-offset:4px}
-  #piatto .num{font-family:Georgia,serif;font-size:3.2rem;line-height:1;font-weight:600}
-  #piatto .eti{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
-  #piatto .attesa{font-size:.95rem;font-variant-numeric:tabular-nums;opacity:.75;min-height:1.3em}
-  .onda{
-    position:absolute;border-radius:50%;border:2px solid var(--notte);
-    inset:8%;opacity:0;pointer-events:none;
-  }
-  .onda.vai{animation:onda .7s ease-out}
-  @keyframes onda{from{opacity:.35;transform:scale(.9)}to{opacity:0;transform:scale(1.12)}}
-
-  .fine-riga{display:flex;gap:12px;width:100%;margin-top:auto}
-  .secondario{
-    flex:1;padding:15px;border-radius:14px;cursor:pointer;
-    border:1.5px solid var(--traccia);background:none;color:var(--ceramica);
-    font:500 .95rem system-ui,sans-serif;
-  }
-  .secondario:focus-visible{outline:2px solid var(--ambra)}
-  #btn-fine{flex:1.4;background:var(--ceramica);color:var(--notte);border:none;font-weight:600}
-
-  /* colori ritmo */
-  body[data-ritmo="buono"] .anello .tempo{stroke:var(--salvia)}
-  body[data-ritmo="medio"] .anello .tempo{stroke:var(--ambra)}
-  body[data-ritmo="veloce"] .anello .tempo{stroke:var(--coccio)}
-  body[data-ritmo="medio"] .messaggio{color:var(--ambra)}
-  body[data-ritmo="veloce"] .messaggio{color:var(--coccio)}
-
-  /* ---------- velo respiro / riepilogo ---------- */
-  .velo{
-    position:fixed;inset:0;background:var(--velo);backdrop-filter:blur(6px);
-    display:none;flex-direction:column;align-items:center;justify-content:center;
-    padding:28px;text-align:center;z-index:20;
-  }
-  .velo.attiva{display:flex}
-  .cerchio-respiro{
-    width:150px;height:150px;border-radius:50%;
-    border:2px solid var(--salvia);margin:26px 0;
-    transition:transform 1s linear, background-color 1s;
-    background:rgba(143,174,126,.08);
-  }
-  .velo h2{font-size:1.5rem;margin-bottom:6px}
-  .velo .fase{font-size:1.1rem;opacity:.85;min-height:1.4em}
-  .velo .conta{font-family:Georgia,serif;font-size:2.2rem;margin-top:4px;font-variant-numeric:tabular-nums}
-
-  /* ---------- riepilogo ---------- */
-  #riepilogo .velo-int{max-width:340px;width:100%}
-  .stat-griglia{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
-  .stat{border:1.5px solid var(--traccia);border-radius:14px;padding:14px 10px}
-  .stat .v{font-family:Georgia,serif;font-size:1.7rem}
-  .stat .k{font-size:.75rem;letter-spacing:.06em;text-transform:uppercase;opacity:.55;margin-top:4px}
-  .verdetto{font-size:1rem;line-height:1.5;opacity:.85;margin-bottom:8px}
-
-  /* ---------- storico ---------- */
-  #storico ul{list-style:none;margin-top:14px}
-  #storico li{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:14px 4px;border-bottom:1px solid var(--traccia);font-size:.92rem;
-  }
-  #storico li .quando{opacity:.6;font-size:.8rem;display:block;margin-top:2px}
-  #storico li .dur{font-family:Georgia,serif;font-size:1.15rem;font-variant-numeric:tabular-nums}
-  .vuoto{opacity:.6;margin-top:26px;font-size:.95rem;line-height:1.5}
-  .riga-voce{display:flex;gap:10px;margin:-4px 0 14px}
-  .riga-voce select{
-    flex:1;padding:12px;border-radius:12px;border:1.5px solid var(--traccia);
-    background:var(--notte);color:var(--ceramica);font:400 .9rem system-ui,sans-serif;
-  }
-  .riga-voce button{
-    padding:12px 16px;border-radius:12px;border:1.5px solid var(--traccia);
-    background:none;color:var(--ceramica);font:500 .9rem system-ui,sans-serif;cursor:pointer;
-  }
-  #storico li{padding:0;position:relative;overflow:hidden}
-  .riga-int{
-    display:flex;justify-content:space-between;align-items:center;width:100%;
-    padding:14px 6px;background:var(--notte);transition:transform .2s;position:relative;z-index:1;
-  }
-  .dietro{
-    position:absolute;right:0;top:0;bottom:0;width:88px;border:none;cursor:pointer;
-    background:var(--coccio);color:#fff;font:600 .85rem system-ui,sans-serif;z-index:0;
-  }
-  #dettaglio textarea{
-    width:100%;min-height:110px;resize:vertical;border-radius:14px;
-    border:1.5px solid var(--traccia);background:none;color:var(--ceramica);
-    font:400 .95rem system-ui,sans-serif;padding:12px;line-height:1.5;
-  }
-  #dettaglio textarea:focus-visible{outline:2px solid var(--ambra)}
-  #dettaglio .campo label{margin-top:6px}
-  .btn-del{
-    border:1.5px solid var(--traccia);background:none;color:var(--ceramica);
-    border-radius:10px;padding:8px 12px;font:500 .8rem system-ui,sans-serif;
-    cursor:pointer;margin-left:12px;flex-shrink:0;opacity:.7;
-  }
-  .btn-del.conferma{border-color:var(--coccio);color:var(--coccio);opacity:1}
-  .btn-del:focus-visible{outline:2px solid var(--ambra)}
-
-  @media (prefers-reduced-motion: reduce){
-    *{animation:none!important;transition:none!important}
-  }
+  @media (prefers-reduced-motion: reduce){*{animation:none!important}}
 </style>
 </head>
-<body data-ritmo="buono">
+<body>
+
+<div class="dot" style="width:10px;height:10px;top:12%;left:12%;animation-delay:0s"></div>
+<div class="dot anello" style="width:22px;height:22px;top:18%;right:10%;animation-delay:1.2s"></div>
+<div class="dot" style="width:6px;height:6px;top:34%;left:22%;animation-delay:2s"></div>
+<div class="dot anello" style="width:16px;height:16px;top:48%;right:18%;animation-delay:.6s"></div>
+<div class="dot" style="width:8px;height:8px;bottom:26%;left:10%;animation-delay:1.7s"></div>
+<div class="dot anello" style="width:26px;height:26px;bottom:14%;right:12%;animation-delay:.3s"></div>
+<div class="dot" style="width:5px;height:5px;bottom:38%;right:32%;animation-delay:2.4s"></div>
 
 <header>
-  <h1>Piano <em>piano</em></h1>
-  <button class="link-btn" id="btn-storico">Storico</button>
+  <h1>GAME<br>OVER</h1>
+  <p>La collana per vincere la partita</p>
 </header>
 
-<!-- ============ HOME ============ -->
-<section class="screen attiva" id="home">
-  <p class="intro">Appoggia il telefono accanto al piatto. Tocca il piatto sullo schermo ogni volta che posi la forchetta: al resto pensa lui.</p>
-
-  <div class="campo">
-    <label>Durata minima del pasto</label>
-    <div class="scelte" id="scelte-durata">
-      <button class="scelta" data-min="15">15 min</button>
-      <button class="scelta" data-min="20" aria-pressed="true">20 min</button>
-      <button class="scelta" data-min="25">25 min</button>
-    </div>
-  </div>
-
-  <div class="interruttore">
-    <span>Semaforo automatico
-      <small>Ti suggerisce quando masticare e quando fermarti</small>
-    </span>
-    <button class="toggle" id="tog-semaforo" role="switch" aria-checked="true" aria-label="Semaforo automatico"></button>
-  </div>
-
-  <div class="interruttore">
-    <span>Pause respiro
-      <small>Un respiro 4-7-8 a un terzo e a due terzi del pasto</small>
-    </span>
-    <button class="toggle" id="tog-respiro" role="switch" aria-checked="true" aria-label="Pause respiro"></button>
-  </div>
-
-  <div class="interruttore">
-    <span>Suoni discreti
-      <small>Campanella leggera quando la pausa è finita</small>
-    </span>
-    <button class="toggle" id="tog-suoni" role="switch" aria-checked="true" aria-label="Suoni discreti"></button>
-  </div>
-
-  <div class="interruttore">
-    <span>Voce guida
-      <small>Ti accompagna a voce, senza esagerare</small>
-    </span>
-    <button class="toggle" id="tog-voce" role="switch" aria-checked="true" aria-label="Voce guida"></button>
-  </div>
-  <div class="riga-voce" id="riga-voce" hidden>
-    <select id="sel-voce" aria-label="Scegli la voce"></select>
-    <button id="btn-prova-voce">Prova</button>
-  </div>
-
-  <button class="cta" id="btn-inizia">Inizia il pasto</button>
-</section>
-
-<!-- ============ PASTO ============ -->
-<section class="screen" id="pasto">
-  <div class="stato-riga">
-    <span id="orologio">00:00</span>
-    <span id="obiettivo"></span>
-  </div>
-  <p class="messaggio" id="messaggio">Buon appetito. Primo boccone quando vuoi.</p>
-
-  <div class="piatto-area">
-    <svg class="anello" viewBox="0 0 100 100" aria-hidden="true">
-      <circle class="fondo" cx="50" cy="50" r="46"></circle>
-      <circle class="tempo" cx="50" cy="50" r="46" id="arco"></circle>
+<main>
+  <a class="livello attivo" href="allergia.html">
+    <span class="tag">Livello 1</span>
+    <svg viewBox="0 0 48 48" fill="none" stroke="#0b0b0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M24 6c-3 6-7 12-7 19a7 7 0 0 0 5 6.8M24 6c3 6 7 12 7 19a7 7 0 0 1-5 6.8"/>
+      <path d="M19 33c-1 3 0 6 2 7M29 33c1 3 .5 7-1.5 8.5"/>
+      <circle cx="10" cy="14" r="1.6" fill="#0b0b0b" stroke="none"/><circle cx="38" cy="20" r="1.6" fill="#0b0b0b" stroke="none"/>
     </svg>
-    <div class="onda" id="onda"></div>
-    <button id="piatto" aria-label="Segna un boccone">
-      <span class="num" id="n-bocconi">0</span>
-      <span class="eti">bocconi</span>
-      <span class="attesa" id="attesa"></span>
-    </button>
-  </div>
+    <span><span class="tit">ALLERGIA</span><br><span class="sotto">Il Diario del Reset: 21 giorni, digitale</span></span>
+  </a>
 
-  <div class="fine-riga">
-    <button class="secondario" id="btn-pausa">Pausa</button>
-    <button class="secondario" id="btn-respiro">Respiro</button>
-    <button class="secondario" id="btn-fine">Termina</button>
-  </div>
-</section>
+  <a class="livello" href="../piano-piano/">
+    <span class="tag">Livello 2</span>
+    <svg viewBox="0 0 48 48" fill="none" stroke="#0b0b0b" stroke-width="3" stroke-linecap="round">
+      <circle cx="24" cy="24" r="17"/><circle cx="24" cy="24" r="10"/>
+    </svg>
+    <span><span class="tit">INTESTINO</span><br><span class="sotto">Piano Piano: mangia con calma</span></span>
+  </a>
 
-<!-- ============ STORICO ============ -->
-<section class="screen" id="storico">
-  <h2 class="serif" style="margin-top:8px">I tuoi pasti</h2>
-  <ul id="lista-storico"></ul>
-  <p class="vuoto" id="storico-vuoto" hidden>Ancora nessun pasto registrato. Il primo piatto è sempre quello che conta.</p>
-  <button class="link-btn" id="btn-svuota" hidden style="align-self:center;margin-top:14px">Svuota tutto lo storico</button>
-  <button class="cta" id="btn-indietro" style="margin-top:auto">Torna all'inizio</button>
-</section>
+  <a class="livello bloccato" href="#" aria-disabled="true">
+    <span class="tag">Presto</span>
+    <svg viewBox="0 0 48 48" fill="none" stroke="#0b0b0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 30a12 12 0 0 1 24 0M18 30v4M24 28v6M30 30v4"/>
+      <path d="M24 8v6M14 12l3 4M34 12l-3 4"/>
+    </svg>
+    <span><span class="tit">ANSIA</span><br><span class="sotto">In arrivo con il prossimo libro</span></span>
+  </a>
 
-<!-- ============ DETTAGLIO SESSIONE ============ -->
-<section class="screen" id="dettaglio">
-  <h2 class="serif" style="margin-top:8px;font-size:1.2rem" id="det-titolo"></h2>
-  <div class="stat-griglia">
-    <div class="stat"><div class="v" id="det-durata">–</div><div class="k">durata</div></div>
-    <div class="stat"><div class="v" id="det-bocconi">–</div><div class="k">bocconi</div></div>
-    <div class="stat"><div class="v" id="det-intervallo">–</div><div class="k">media tra bocconi</div></div>
-    <div class="stat"><div class="v" id="det-obiettivo">–</div><div class="k">obiettivo</div></div>
-  </div>
-  <p class="verdetto" id="det-verdetto"></p>
-  <div class="campo" style="margin-top:14px">
-    <label>La tua nota</label>
-    <textarea id="det-nota" placeholder="Com’è andata? Fame, contesto, sensazioni…"></textarea>
-  </div>
-  <button class="cta" id="btn-salva-nota" style="margin-top:4px">Salva nota</button>
-  <button class="link-btn" id="btn-torna-storico" style="margin-top:14px">Torna allo storico</button>
-</section>
+  <a class="livello bloccato" href="#" aria-disabled="true">
+    <span class="tag">Presto</span>
+    <svg viewBox="0 0 48 48" fill="none" stroke="#0b0b0b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="8" y="16" width="28" height="16" rx="4"/>
+      <path d="M36 21h5v6h-5M13 21v6"/>
+    </svg>
+    <span><span class="tit">STANCHEZZA</span><br><span class="sotto">In arrivo con il prossimo libro</span></span>
+  </a>
+</main>
 
-<!-- ============ VELO RESPIRO ============ -->
-<div class="velo" id="velo-respiro" role="dialog" aria-label="Pausa respiro">
-  <h2>Pausa</h2>
-  <p style="opacity:.75;font-size:.95rem">Posa la forchetta. Un solo respiro, con calma.</p>
-  <div class="cerchio-respiro" id="cerchio"></div>
-  <p class="fase" id="fase-respiro">Inspira</p>
-  <p class="conta" id="conta-respiro">4</p>
-  <button class="link-btn" id="btn-salta" style="margin-top:22px">Salta la pausa</button>
-</div>
+<footer>
+  <p class="press">PRESS START ▲</p>
+  <p class="mafla">MAFLA</p>
+</footer>
 
-<!-- ============ VELO PAUSA ============ -->
-<div class="velo" id="velo-pausa" role="dialog" aria-label="Pasto in pausa">
-  <h2>In pausa</h2>
-  <p style="opacity:.75;font-size:.95rem;margin-top:6px">Il tempo è fermo. Riprendi quando vuoi.</p>
-  <button class="cta" id="btn-riprendi" style="width:min(80vw,280px);margin-top:30px">Riprendi il pasto</button>
-  <button class="link-btn" id="btn-annulla" style="margin-top:18px">Annulla il pasto</button>
-</div>
-
-<!-- ============ VELO RIEPILOGO ============ -->
-<div class="velo" id="riepilogo" role="dialog" aria-label="Riepilogo pasto">
-  <div class="velo-int">
-    <h2>Pasto concluso</h2>
-    <div class="stat-griglia">
-      <div class="stat"><div class="v" id="r-durata">–</div><div class="k">durata</div></div>
-      <div class="stat"><div class="v" id="r-bocconi">–</div><div class="k">bocconi</div></div>
-      <div class="stat"><div class="v" id="r-intervallo">–</div><div class="k">media tra bocconi</div></div>
-      <div class="stat"><div class="v" id="r-obiettivo">–</div><div class="k">obiettivo</div></div>
-    </div>
-    <p class="verdetto" id="r-verdetto"></p>
-    <button class="cta" id="btn-chiudi-riep" style="width:100%;margin-top:14px">Va bene così</button>
-  </div>
-</div>
-
-<script>
-(function(){
-  "use strict";
-  const $ = id => document.getElementById(id);
-
-  /* ---------- impostazioni ---------- */
-  let durataMin = 20;
-  let usaSemaforo = true;
-  let usaRespiro = true;
-
-  document.querySelectorAll('#scelte-durata .scelta').forEach(b=>{
-    b.addEventListener('click',()=>{
-      document.querySelectorAll('#scelte-durata .scelta').forEach(x=>x.setAttribute('aria-pressed','false'));
-      b.setAttribute('aria-pressed','true');
-      durataMin = parseInt(b.dataset.min,10);
-    });
-  });
-  function legaToggle(el, set){
-    el.addEventListener('click',()=>{
-      const on = el.getAttribute('aria-checked')!=='true';
-      el.setAttribute('aria-checked', on?'true':'false');
-      set(on);
-    });
-  }
-  let usaSuoni = true;
-  let usaVoce = true;
-  legaToggle($('tog-semaforo'), v=>usaSemaforo=v);
-  legaToggle($('tog-respiro'),  v=>usaRespiro=v);
-  legaToggle($('tog-suoni'),    v=>usaSuoni=v);
-  legaToggle($('tog-voce'),     v=>{usaVoce=v; if(!v) try{speechSynthesis.cancel();}catch(e){}});
-
-  /* ---------- audio: campanelle morbide + voce ---------- */
-  let ctxAudio=null;
-  function initAudio(){
-    if(!usaSuoni && !usaVoce) return;
-    try{
-      if(!ctxAudio) ctxAudio=new (window.AudioContext||window.webkitAudioContext)();
-      if(ctxAudio.state==='suspended') ctxAudio.resume();
-    }catch(e){}
-    // sblocca le voci su alcuni browser
-    try{ if('speechSynthesis' in window) speechSynthesis.getVoices(); }catch(e){}
-  }
-  function nota(freq,dur,vol,quando){
-    try{
-      const t=ctxAudio.currentTime+(quando||0);
-      const o=ctxAudio.createOscillator(), g=ctxAudio.createGain();
-      o.type='sine'; o.frequency.value=freq;
-      g.gain.setValueAtTime(0,t);
-      g.gain.linearRampToValueAtTime(vol,t+0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-      o.connect(g); g.connect(ctxAudio.destination);
-      o.start(t); o.stop(t+dur+0.05);
-    }catch(e){}
-  }
-  function suonoTap(){       if(usaSuoni&&ctxAudio) nota(520,0.12,0.05,0); }
-  function suonoPronto(){    if(usaSuoni&&ctxAudio){ nota(660,0.5,0.09,0); nota(880,0.7,0.08,0.18); } }
-  function suonoVeloce(){    if(usaSuoni&&ctxAudio) nota(330,0.4,0.08,0); }
-  function suonoPausa(){     if(usaSuoni&&ctxAudio) nota(587,0.9,0.09,0); }
-
-  let vociIt=[];
-  function punteggioVoce(v){
-    const n=(v.name||'').toLowerCase();
-    let p=0;
-    if(n.includes('premium')) p+=40;
-    if(n.includes('enhanced')||n.includes('migliorat')) p+=30;
-    if(n.includes('alice')||n.includes('federica')||n.includes('emma')||n.includes('luca')) p+=10;
-    if(n.includes('eloquence')||n.includes('compact')) p-=20;
-    if(v.localService) p+=5;
-    return p;
-  }
-  function aggiornaVoci(){
-    try{
-      const tutte=speechSynthesis.getVoices()||[];
-      vociIt=tutte.filter(v=>v.lang && v.lang.toLowerCase().startsWith('it'))
-                  .sort((a,b)=>punteggioVoce(b)-punteggioVoce(a));
-      const sel=$('sel-voce');
-      if(vociIt.length>1){
-        $('riga-voce').hidden=false;
-        const salvata=localStorage.getItem('vocePreferita')||'';
-        sel.innerHTML='';
-        vociIt.forEach(v=>{
-          const o=document.createElement('option');
-          o.value=v.name; o.textContent=v.name.replace(/\(.*?\)/,'').trim();
-          if(v.name===salvata) o.selected=true;
-          sel.appendChild(o);
-        });
-      }
-    }catch(e){}
-  }
-  try{
-    if('speechSynthesis' in window){
-      aggiornaVoci();
-      speechSynthesis.onvoiceschanged=aggiornaVoci;
-    }
-  }catch(e){}
-  function vocePreferita(){
-    const scelta=localStorage.getItem('vocePreferita');
-    if(scelta){ const v=vociIt.find(v=>v.name===scelta); if(v) return v; }
-    return vociIt[0]||null;
-  }
-  function voce(testo){
-    if(!usaVoce || !('speechSynthesis' in window)) return;
-    try{
-      speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(testo);
-      u.lang='it-IT'; u.rate=0.92; u.pitch=1.05; u.volume=0.9;
-      const v=vocePreferita();
-      if(v) u.voice=v;
-      speechSynthesis.speak(u);
-    }catch(e){}
-  }
-  $('sel-voce').addEventListener('change',e=>{
-    try{ localStorage.setItem('vocePreferita',e.target.value); }catch(err){}
-  });
-  $('btn-prova-voce').addEventListener('click',()=>{
-    initAudio();
-    voce('Buon appetito. Mangia con calma, un boccone alla volta.');
-  });
-  let ultimaVoceVeloce=0;
-  function voceVeloce(){
-    // non ripete il rimprovero più di una volta al minuto
-    const ora=Date.now();
-    if(ora-ultimaVoceVeloce>60000){ ultimaVoceVeloce=ora; voce('Piano. Posa la forchetta e mastica.'); }
-  }
-
-  /* ---------- navigazione ---------- */
-  function mostra(id){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('attiva'));
-    $(id).classList.add('attiva');
-  }
-
-  /* ---------- stato pasto ---------- */
-  const CIRC = 2*Math.PI*46;
-  $('arco').style.strokeDasharray = CIRC;
-  $('arco').style.strokeDashoffset = CIRC;
-
-  let inizio=0, bocconi=0, ultimoBoccone=0, intervalli=[];
-  let respiroInCoda=false, codaDa=0, avvisoRespiroDato=false;
-  let inPausa=false, pausatoDa=0, obiettivoRaggiunto=false;
-  let frasiUsate=[];
-  const FRASI=[
-    'Il cibo è nutrimento, non una gara.',
-    'Ogni boccone merita il suo tempo.',
-    'Sei a tavola, non in corsa.',
-    'La sazietà arriva dopo venti minuti: dalle tempo.',
-    'Chi va piano sente i sapori.',
-    'La digestione comincia in bocca: mastica.',
-    'Posa la forchetta: il gusto resta.',
-    'Questo pasto è un momento tuo.',
-    'Respira tra un boccone e l\u2019altro.',
-    'La tavola è una pausa, non un pit stop.'
-  ];
-  function fraseCalma(){
-    if(frasiUsate.length>=FRASI.length) frasiUsate=[];
-    let idx;
-    do{ idx=Math.floor(Math.random()*FRASI.length); }while(frasiUsate.includes(idx));
-    frasiUsate.push(idx);
-    return FRASI[idx];
-  }
-  let timerId=null, wakeLock=null;
-  let pausaFatta = {1:false, 2:false};
-  const PAUSA_SUGGERITA = 25;   // secondi consigliati tra bocconi
-  const SOGLIA_VELOCE  = 15;
-
-  async function tieniSchermoAcceso(){
-    try{ if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); }catch(e){}
-  }
-  function rilasciaSchermo(){ try{ if(wakeLock){wakeLock.release(); wakeLock=null;} }catch(e){} }
-
-  $('btn-inizia').addEventListener('click',()=>{
-    inizio = Date.now(); bocconi=0; ultimoBoccone=0; intervalli=[];
-    pausaFatta={1:false,2:false};
-    respiroInCoda=false; avvisoRespiroDato=false;
-    inPausa=false; obiettivoRaggiunto=false;
-    $('n-bocconi').textContent='0';
-    $('attesa').textContent='';
-    $('messaggio').textContent='Buon appetito. Primo boccone quando vuoi.';
-    document.body.dataset.ritmo='buono';
-    $('obiettivo').textContent='obiettivo '+durataMin+' min';
-    $('arco').style.strokeDashoffset=CIRC;
-    ultimaVoceVeloce=0;
-    frasiUsate=[];
-    mostra('pasto');
-    tieniSchermoAcceso();
-    initAudio();
-    const via=()=>{
-      inizio=Date.now();
-      $('messaggio').textContent='Buon appetito. Primo boccone quando vuoi.';
-      voce('Buon appetito. Mangia con calma, ci penso io al ritmo.');
-      timerId=setInterval(tic,1000);
-    };
-    if(usaRespiro){
-      $('messaggio').textContent='Prima di iniziare, un respiro insieme.';
-      avviaRespiro(via,'Benvenuto a tavola. Prima di iniziare, un respiro insieme. Mettiti comodo.');
-    }else{
-      via();
-    }
-  });
-
-  function fmt(s){
-    const m=Math.floor(s/60), r=s%60;
-    return String(m).padStart(2,'0')+':'+String(r).padStart(2,'0');
-  }
-
-  function tic(){
-    if(inPausa) return;
-    const sec = Math.floor((Date.now()-inizio)/1000);
-    $('orologio').textContent = fmt(sec);
-
-    if(sec>0 && sec%90===0 && document.body.dataset.ritmo==='buono'
-       && !$('velo-respiro').classList.contains('attiva') && !respiroInCoda){
-      const f=fraseCalma();
-      $('messaggio').textContent=f;
-      if(sec%180===0) voce(f);
-    }
-
-    if(!obiettivoRaggiunto && sec>=durataMin*60){
-      obiettivoRaggiunto=true;
-      suonoPronto();
-      $('messaggio').textContent='Obiettivo raggiunto. Continua pure, senza fretta.';
-      voce('Obiettivo raggiunto. Continua pure, senza fretta.');
-    }
-
-    // anello del tempo verso l'obiettivo
-    const frac = Math.min(sec/(durataMin*60),1);
-    $('arco').style.strokeDashoffset = CIRC*(1-frac);
-
-    // conto alla rovescia sotto i bocconi + semaforo
-    if(bocconi>0){
-      const daUltimo = Math.floor((Date.now()-ultimoBoccone)/1000);
-      const resta = PAUSA_SUGGERITA - daUltimo;
-      if(usaSemaforo){
-        if(resta>0){
-          $('attesa').textContent = 'ancora '+resta+'s di pausa';
-        }else{
-          if(resta===0) suonoPronto();   // campanella: pausa completata
-          $('attesa').textContent = 'quando vuoi, con calma';
-          if(document.body.dataset.ritmo!=='veloce') document.body.dataset.ritmo='buono';
-        }
-      }else{
-        $('attesa').textContent = daUltimo+'s dall\u2019ultimo';
-      }
-    }
-
-    // pause respiro a 1/3 e 2/3
-    if(usaRespiro){
-      const t1 = durataMin*60/3, t2 = durataMin*60*2/3;
-      if(!pausaFatta[1] && sec>=t1){ pausaFatta[1]=true; richiediRespiro(); }
-      else if(!pausaFatta[2] && sec>=t2){ pausaFatta[2]=true; richiediRespiro(); }
-    }
-
-    // parte solo quando hai finito di masticare (o dopo 75s di attesa)
-    if(respiroInCoda && !$('velo-respiro').classList.contains('attiva')){
-      const daUlt = bocconi>0 ? (Date.now()-ultimoBoccone)/1000 : 999;
-      const attesa = (Date.now()-codaDa)/1000;
-      if(daUlt>=PAUSA_SUGGERITA || attesa>75){
-        respiroInCoda=false; avvisoRespiroDato=false;
-    inPausa=false; obiettivoRaggiunto=false; avviaRespiro();
-      }else if(!avvisoRespiroDato){
-        avvisoRespiroDato=true;
-        $('messaggio').textContent='Finisci con calma il boccone: tra poco, pausa respiro.';
-        voce('Finisci il boccone con calma. Tra poco facciamo una pausa respiro.');
-      }
-    }
-  }
-
-  /* ---------- tap boccone ---------- */
-  $('piatto').addEventListener('click',()=>{
-    const ora = Date.now();
-    if(bocconi>0){
-      const gap = (ora-ultimoBoccone)/1000;
-      intervalli.push(gap);
-      if(usaSemaforo){
-        if(gap < SOGLIA_VELOCE){
-          document.body.dataset.ritmo='veloce';
-          $('messaggio').textContent='Troppo veloce: posa la forchetta.';
-          suonoVeloce(); voceVeloce();
-        }else if(gap < PAUSA_SUGGERITA){
-          document.body.dataset.ritmo='medio';
-          $('messaggio').textContent='Quasi: allunga un po\u2019 la pausa.';
-        }else{
-          document.body.dataset.ritmo='buono';
-          $('messaggio').textContent='Ritmo perfetto. Gusta.';
-        }
-      }
-    }else{
-      $('messaggio').textContent='Mastica bene, poi posa la forchetta.';
-    }
-    bocconi++; ultimoBoccone=ora;
-    $('n-bocconi').textContent=bocconi;
-    suonoTap();
-    if(navigator.vibrate) try{navigator.vibrate(15);}catch(e){}
-    const o=$('onda'); o.classList.remove('vai'); void o.offsetWidth; o.classList.add('vai');
-  });
-
-  /* ---------- respiro 4-7-8 ---------- */
-  let respiroTimer=null;
-  function richiediRespiro(){
-    if($('velo-respiro').classList.contains('attiva') || respiroInCoda) return;
-    respiroInCoda=true; codaDa=Date.now(); avvisoRespiroDato=false;
-  }
-  let respiroCallback=null;
-  function avviaRespiro(cb,intro){
-    respiroCallback=cb||null;
-    $('velo-respiro').classList.add('attiva');
-    suonoPausa();
-    const fasi=[['Preparati…',10,1,intro||'Pausa respiro. Posa la forchetta, appoggia la schiena e mettiti comodo. Iniziamo tra qualche secondo.'],
-                ['Inspira dal naso',4,1.35,'Inspira dal naso.'],
-                ['Trattieni',7,1.35,'Trattieni.'],
-                ['Espira dalla bocca',8,1,'Espira, lentamente, dalla bocca.']];
-    let i=0, resta=fasi[0][1];
-    voce(fasi[0][3]);
-    aggiorna();
-    function aggiorna(){
-      $('fase-respiro').textContent=fasi[i][0];
-      $('conta-respiro').textContent=resta;
-      $('cerchio').style.transform='scale('+fasi[i][2]+')';
-    }
-    respiroTimer=setInterval(()=>{
-      resta--;
-      if(resta<=0){
-        i++;
-        if(i>=fasi.length){
-          const avevaCb=!!respiroCallback;
-          chiudiRespiro();
-          if(!avevaCb) voce('Bene. Si riprende, con calma.');
-          return;
-        }
-        resta=fasi[i][1];
-        if(usaSuoni&&ctxAudio) nota(700+i*80,0.35,0.07,0);  // rintocco a ogni cambio fase
-        if(fasi[i][3]) voce(fasi[i][3]);
-      }
-      aggiorna();
-    },1000);
-  }
-  function chiudiRespiro(){
-    clearInterval(respiroTimer); respiroTimer=null;
-    try{speechSynthesis.cancel();}catch(e){}
-    $('velo-respiro').classList.remove('attiva');
-    $('cerchio').style.transform='scale(1)';
-    $('messaggio').textContent='Bene. Si riprende, con calma.';
-    const cb=respiroCallback; respiroCallback=null;
-    if(cb) cb();
-  }
-  $('btn-salta').addEventListener('click',chiudiRespiro);
-  $('btn-respiro').addEventListener('click',()=>{
-    if(!$('velo-respiro').classList.contains('attiva')){ respiroInCoda=false; avviaRespiro(); }
-  });
-
-  /* ---------- fine pasto ---------- */
-  $('btn-pausa').addEventListener('click',()=>{
-    if(inPausa) return;
-    inPausa=true; pausatoDa=Date.now();
-    try{speechSynthesis.cancel();}catch(e){}
-    $('velo-pausa').classList.add('attiva');
-  });
-  $('btn-riprendi').addEventListener('click',()=>{
-    const fermo=Date.now()-pausatoDa;
-    inizio+=fermo;
-    if(ultimoBoccone) ultimoBoccone+=fermo;
-    if(codaDa) codaDa+=fermo;
-    inPausa=false;
-    $('velo-pausa').classList.remove('attiva');
-    $('messaggio').textContent='Si riprende. Con calma.';
-  });
-  $('btn-annulla').addEventListener('click',()=>{
-    clearInterval(timerId); rilasciaSchermo();
-    inPausa=false;
-    $('velo-pausa').classList.remove('attiva');
-    mostra('home');
-  });
-
-  $('btn-fine').addEventListener('click',()=>{
-    if($('velo-respiro').classList.contains('attiva')) return;
-    clearInterval(timerId); rilasciaSchermo();
-    const durataSec = Math.floor((Date.now()-inizio)/1000);
-    const media = intervalli.length ? Math.round(intervalli.reduce((a,b)=>a+b,0)/intervalli.length) : 0;
-    if(usaRespiro){
-      avviaRespiro(()=>mostraRiepilogo(durataSec,media),
-        'Il pasto è finito. Chiudiamo con un respiro, con calma.');
-    }else{
-      mostraRiepilogo(durataSec,media);
-    }
-  });
-
-  function mostraRiepilogo(durataSec,media){
-    $('r-durata').textContent = fmt(durataSec);
-    $('r-bocconi').textContent = bocconi;
-    $('r-intervallo').textContent = media? media+'s' : '–';
-    $('r-obiettivo').textContent = durataMin+' min';
-
-    const verdetto=verdettoDi({durataSec,mediaSec:media,obiettivoMin:durataMin});
-    $('r-verdetto').textContent=verdetto;
-    $('riepilogo').classList.add('attiva');
-    voce(verdetto);
-
-    // salvataggio
-    try{
-      const pasto={quando:Date.now(),durataSec,bocconi,mediaSec:media,obiettivoMin:durataMin};
-      let lista=[];
-      try{ lista=JSON.parse(localStorage.getItem('pasti')||'[]'); }catch(e){}
-      lista.unshift(pasto);
-      if(lista.length>60) lista=lista.slice(0,60);
-      localStorage.setItem('pasti',JSON.stringify(lista));
-    }catch(e){ console.error('salvataggio non riuscito',e); }
-  }
-
-  $('btn-chiudi-riep').addEventListener('click',()=>{
-    $('riepilogo').classList.remove('attiva');
-    mostra('home');
-  });
-
-  /* ---------- storico ---------- */
-  function leggiPasti(){
-    try{ return JSON.parse(localStorage.getItem('pasti')||'[]'); }catch(e){ return []; }
-  }
-  function salvaPasti(lista){
-    try{ localStorage.setItem('pasti',JSON.stringify(lista)); }catch(e){}
-  }
-  function verdettoDi(p){
-    const okDurata = p.durataSec >= p.obiettivoMin*60;
-    const okPause  = (p.mediaSec||0) >= PAUSA_SUGGERITA;
-    if(okDurata && okPause) return 'Pasto da manuale: durata giusta e pause vere. Cos\u00ec si digerisce.';
-    if(okDurata) return 'Durata raggiunta, ma i bocconi erano ravvicinati. Prossimo obiettivo: pause pi\u00f9 lunghe.';
-    if(okPause) return 'Buone pause tra i bocconi, ma pasto un po\u2019 corto. Aggiungi qualche minuto a tavola.';
-    return 'Pasto veloce. Nessun dramma: domani si riparte, un boccone alla volta.';
-  }
-  function renderStorico(){
-    const ul=$('lista-storico'); ul.innerHTML='';
-    const lista=leggiPasti();
-    $('storico-vuoto').hidden = lista.length>0;
-    $('btn-svuota').hidden = lista.length===0;
-    lista.forEach(p=>{
-      const li=document.createElement('li');
-      const dietro=document.createElement('button');
-      dietro.className='dietro'; dietro.textContent='Elimina';
-      dietro.setAttribute('aria-label','Elimina questo pasto');
-      const riga=document.createElement('div'); riga.className='riga-int';
-      const d=new Date(p.quando);
-      const quando=d.toLocaleDateString('it-IT',{day:'numeric',month:'short'})+' \u00b7 '+
-                   d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-      const ok = p.durataSec>=p.obiettivoMin*60;
-      riga.innerHTML='<span>'+p.bocconi+' bocconi, media '+(p.mediaSec||'\u2013')+'s'+
-        '<span class="quando">'+quando+(ok?' \u00b7 obiettivo raggiunto':'')+(p.nota?' \u00b7 con nota':'')+'</span></span>'+
-        '<span class="dur">'+fmt(p.durataSec)+'</span>';
-      li.appendChild(dietro); li.appendChild(riga);
-
-      // scorrimento laterale per eliminare
-      let x0=0,dx=0,aperto=false,mosso=false;
-      riga.addEventListener('touchstart',e=>{
-        x0=e.touches[0].clientX; dx=0; mosso=false; riga.style.transition='none';
-      },{passive:true});
-      riga.addEventListener('touchmove',e=>{
-        dx=e.touches[0].clientX-x0;
-        if(Math.abs(dx)>8) mosso=true;
-        let t=(aperto?-88:0)+dx;
-        if(t>0)t=0; if(t<-110)t=-110;
-        riga.style.transform='translateX('+t+'px)';
-      },{passive:true});
-      riga.addEventListener('touchend',()=>{
-        riga.style.transition='transform .2s';
-        const t=(aperto?-88:0)+dx;
-        aperto = t<-44;
-        riga.style.transform='translateX('+(aperto?-88:0)+'px)';
-      });
-      // tocco semplice = apri il dettaglio (se non stavi scorrendo)
-      riga.addEventListener('click',()=>{
-        if(mosso) return;
-        if(aperto){ aperto=false; riga.style.transform='translateX(0)'; return; }
-        apriDettaglio(p.quando);
-      });
-      dietro.addEventListener('click',()=>{
-        const l=leggiPasti();
-        const i=l.findIndex(x=>x.quando===p.quando);
-        if(i>=0){ l.splice(i,1); salvaPasti(l); }
-        renderStorico();
-      });
-      ul.appendChild(li);
-    });
-  }
-  $('btn-storico').addEventListener('click',()=>{ mostra('storico'); renderStorico(); });
-  let svuotaArmato=false;
-  $('btn-svuota').addEventListener('click',()=>{
-    if(!svuotaArmato){
-      svuotaArmato=true;
-      $('btn-svuota').textContent='Sicuro? Tocca di nuovo per svuotare';
-      setTimeout(()=>{svuotaArmato=false; $('btn-svuota').textContent='Svuota tutto lo storico';},3500);
-    }else{
-      salvaPasti([]); svuotaArmato=false;
-      $('btn-svuota').textContent='Svuota tutto lo storico';
-      renderStorico();
-    }
-  });
-
-  /* ---------- dettaglio sessione + nota ---------- */
-  let dettaglioId=null;
-  function apriDettaglio(id){
-    const p=leggiPasti().find(x=>x.quando===id);
-    if(!p) return;
-    dettaglioId=id;
-    const d=new Date(p.quando);
-    $('det-titolo').textContent=d.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'})+', '+
-      d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    $('det-durata').textContent=fmt(p.durataSec);
-    $('det-bocconi').textContent=p.bocconi;
-    $('det-intervallo').textContent=p.mediaSec? p.mediaSec+'s':'\u2013';
-    $('det-obiettivo').textContent=p.obiettivoMin+' min';
-    $('det-verdetto').textContent=verdettoDi(p);
-    $('det-nota').value=p.nota||'';
-    mostra('dettaglio');
-  }
-  $('btn-salva-nota').addEventListener('click',()=>{
-    const l=leggiPasti();
-    const p=l.find(x=>x.quando===dettaglioId);
-    if(p){ p.nota=$('det-nota').value.trim(); salvaPasti(l); }
-    const b=$('btn-salva-nota');
-    b.textContent='Salvata \u2713';
-    setTimeout(()=>{b.textContent='Salva nota';},1500);
-  });
-  $('btn-torna-storico').addEventListener('click',()=>{ mostra('storico'); renderStorico(); });
-
-  $('btn-indietro').addEventListener('click',()=>mostra('home'));
-})();
-</script>
 <script>
 if('serviceWorker' in navigator){
-  window.addEventListener('load',()=>{
-    navigator.serviceWorker.register('sw.js').catch(()=>{});
-  });
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
 }
 </script>
 </body>
