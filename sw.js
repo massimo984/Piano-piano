@@ -1,4 +1,4 @@
-const CACHE = 'gameover-v8';
+const CACHE = 'gameover-v9';
 const FILES = ['./', './index.html', './allergia.html', './pianopiano.html', './manifest.json',
                './naso.png', './icon-192.png', './icon-512.png', './apple-touch-icon.png'];
 self.addEventListener('install', e => {

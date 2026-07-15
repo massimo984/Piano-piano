@@ -446,11 +446,14 @@
     if(!usaVoce || !('speechSynthesis' in window)) return;
     try{
       speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(testo);
-      u.lang='it-IT'; u.rate=0.92; u.pitch=1.05; u.volume=0.9;
-      const v=vocePreferita();
-      if(v) u.voice=v;
-      speechSynthesis.speak(u);
+      const frasi=testo.match(/[^.!?]+[.!?]*/g)||[testo];
+      frasi.forEach((fr,idx)=>{
+        const p=new SpeechSynthesisUtterance(fr.trim());
+        p.lang='it-IT'; p.rate=0.88; p.pitch=1.0; p.volume=0.9;
+        const vv=vocePreferita(); if(vv) p.voice=vv;
+        if(idx>0) p.text='\u2026 '+p.text;
+        speechSynthesis.speak(p);
+      });
     }catch(e){}
   }
   $('sel-voce').addEventListener('change',e=>{
@@ -463,7 +466,7 @@
   let ultimaVoceVeloce=0;
   function voceVeloce(){
     const ora=Date.now();
-    if(ora-ultimaVoceVeloce>60000){ ultimaVoceVeloce=ora; voce('Piano. Posa la forchetta e mastica.'); }
+    if(ora-ultimaVoceVeloce>60000){ ultimaVoceVeloce=ora; voce('Con calma. C\u2019è tutto il tempo che serve.'); }
   }
 
   /* ---------- navigazione ---------- */
@@ -482,16 +485,16 @@
   let inPausa=false, pausatoDa=0, obiettivoRaggiunto=false;
   let frasiUsate=[];
   const FRASI=[
-    'Il cibo è nutrimento, non una gara.',
-    'Ogni boccone merita il suo tempo.',
-    'Sei a tavola, non in corsa.',
-    'La sazietà arriva dopo venti minuti: dalle tempo.',
-    'Chi va piano sente i sapori.',
-    'La digestione comincia in bocca: mastica.',
-    'Posa la forchetta: il gusto resta.',
-    'Questo pasto è un momento tuo.',
-    'Respira tra un boccone e l\u2019altro.',
-    'La tavola è una pausa, non un pit stop.'
+    'Che bello avere tempo per gustare.',
+    'Ogni boccone è un piccolo piacere: assaporalo.',
+    'Stai facendo un regalo al tuo corpo.',
+    'Il sapore vive nella lentezza.',
+    'Ottimo ritmo: continua così.',
+    'La tavola è il tuo momento di pace.',
+    'Senti i profumi, i sapori, la consistenza.',
+    'Ogni pasto lento è una piccola vittoria.',
+    'Il tuo corpo ti sta già ringraziando.',
+    'Respira, sorridi, gusta.'
   ];
   function fraseCalma(){
     if(frasiUsate.length>=FRASI.length) frasiUsate=[];
